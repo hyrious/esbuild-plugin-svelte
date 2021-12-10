@@ -1,0 +1,36 @@
+{
+  "name": "@hyrious/esbuild-plugin-svelte",
+  "version": "0.1.0",
+  "description": "Load .svelte files in esbuild.",
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "npm run build-cjs && npm run build-esm",
+    "build-cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.js --sourcemap --sources-content=false --external:esbuild --external:svelte",
+    "build-esm": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.mjs --sourcemap --sources-content=false --external:esbuild --external:svelte"
+  },
+  "repository": "hyrious/esbuild-plugin-svelte",
+  "keywords": [
+    "esbuild",
+    "svelte"
+  ],
+  "author": "hyrious <hyrious@outlook.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "esbuild": "*",
+    "svelte": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.12",
+    "esbuild": "^0.14.2",
+    "svelte": "^3.44.2",
+    "uvu": "^0.5.2"
+  }
+}
