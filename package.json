@@ -13,8 +13,8 @@
   "types": "./src/index.ts",
   "scripts": {
     "build": "npm run build-cjs && npm run build-esm",
-    "build-cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.js --sourcemap --sources-content=false --external:esbuild --external:svelte",
-    "build-esm": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.mjs --sourcemap --sources-content=false --external:esbuild --external:svelte"
+    "build-cjs": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.js --sourcemap --external:esbuild --external:svelte",
+    "build-esm": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.mjs --sourcemap --external:esbuild --external:svelte"
   },
   "repository": "hyrious/esbuild-plugin-svelte",
   "keywords": [

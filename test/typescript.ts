@@ -1,6 +1,6 @@
 import { test } from "uvu";
 import * as assert from "uvu/assert";
-import { preprocess } from "svelte/compiler";
+import { preprocess, compile } from "svelte/compiler";
 import { typescript } from "../src/typescript";
 
 test("The esbuild preprocessor should correctly transform script blocks", async () => {
@@ -13,10 +13,20 @@ test("The esbuild preprocessor should correctly transform script blocks", async 
 `;
 
   try {
+    const filename = "./src/nested/Button.svelte";
     const processed = await preprocess(source, typescript(), {
-      filename: "./src/nested/Button.svelte",
+      filename,
     });
-    console.log(processed);
+    const result = compile(processed.code, {
+      filename,
+      sourcemap: processed.map,
+      generate: "dom",
+      css: true,
+      enableSourcemap: true,
+    });
+    const { code, map } = result.js;
+    map.sourcesContent = [source];
+    console.log(code);
   } catch (err) {
     console.error(err);
   }
