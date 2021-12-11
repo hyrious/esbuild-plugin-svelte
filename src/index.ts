@@ -7,7 +7,7 @@ import { readFile } from "fs/promises";
 import { compile, preprocess } from "svelte/compiler";
 import { version } from "../package.json";
 import { typescript } from "./typescript";
-import { convertMessage, makeArray, quote, warn } from "./utils";
+import { convertMessage, makeArray, quote } from "./utils";
 
 export { version, typescript };
 
