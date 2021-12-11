@@ -11,6 +11,10 @@
     "./package.json": "./package.json"
   },
   "types": "./src/index.ts",
+  "files": [
+    "src",
+    "dist"
+  ],
   "scripts": {
     "build": "npm run build-cjs && npm run build-esm",
     "build-cjs": "esbuild src/index.ts --bundle --platform=node --target=node14 --format=cjs --outfile=dist/index.js --sourcemap --external:esbuild --external:svelte",
