@@ -8,7 +8,11 @@ import { Options, typescript } from "./typescript";
 
 const ts = suite("typescript.ts");
 
-async function compile_file(filename: string, options?: Options) {
+async function compile_file(
+  filename: string,
+  options?: Options,
+  addedSources?: Record<string, string>
+) {
   const source = await readFile(filename, "utf-8");
   const processor = typescript(options);
   const processed = await preprocess(source, processor, { filename });
@@ -18,12 +22,15 @@ async function compile_file(filename: string, options?: Options) {
     filename,
     dev: true,
   });
-  // fix "sources" field, which is only the basename
-  assert.equal(js.map.sources, [basename(filename)]);
-  js.map.sources = [filename];
+  assert.equal(js.map.sources, [
+    basename(filename),
+    ...Object.keys({ ...addedSources }),
+  ]);
+  // fix "sources" field, whose first is only the basename
+  js.map.sources[0] = filename;
   // note: compile also drops "sourcesContent" field
   assert.not.throws(() => {
-    validate(js.code, js.map, { [filename]: source });
+    validate(js.code, js.map, { [filename]: source, ...addedSources });
   });
 }
 
@@ -33,11 +40,16 @@ ts("should generate correct sourcemap", async () => {
 
 ts("should work with `src`", async () => {
   const filename = "./src/fixtures/src-nested.svelte";
-  await compile_file(filename, {
-    onwarn(message) {
-      assert.match(message.text!, "Comparison with -0 using the");
+  const external = await readFile("./src/fixtures/nested/script.ts", "utf-8");
+  await compile_file(
+    filename,
+    {
+      onwarn(message) {
+        assert.match(message.text!, "Comparison with -0 using the");
+      },
     },
-  });
+    { "./nested/script.ts": external }
+  );
 });
 
 ts("should yell at not founding `src`", async () => {
