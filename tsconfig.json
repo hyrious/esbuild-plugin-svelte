@@ -9,6 +9,7 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "strict": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "useUnknownInCatchVariables": false
   }
 }
