@@ -23,6 +23,7 @@ esbuild.build({
 
 // standalone typescript preprocessor powered by esbuild
 import { typescript } from "@hyrious/esbuild-plugin-svelte";
+
 // in svelte.config.js
 export default {
   preprocess: [typescript()];
@@ -31,13 +32,11 @@ export default {
 
 ### Options
 
-Basically the same as [vite-plugin-svelte](https://github.com/sveltejs/vite-plugin-svelte/blob/main/docs/config.md). A few different:
-
-- No `include` and `exclude` and `extensions`, instead `filter`.
-- No `onwarn`.
-- No `ignorePluginPreprocessors` and `api.sveltePreprocess`, since in esbuild it's not easy to composite plugins.
-- No `disableDependencyReinclusion`, since there's no pre-bundling in esbuild lifecycle.
-- No `hot` and `experimental` (maybe added in the future).
+```js
+svelte({
+  
+});
+```
 
 ## Credits
 
