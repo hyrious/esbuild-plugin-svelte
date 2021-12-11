@@ -15,7 +15,7 @@
     "build": "npm run build-cjs && npm run build-esm",
     "build-cjs": "esbuild src/index.ts --bundle --platform=node --target=node14 --format=cjs --outfile=dist/index.js --sourcemap --external:esbuild --external:svelte",
     "build-esm": "esbuild src/index.ts --bundle --platform=node --target=node14 --format=esm --outfile=dist/index.mjs --sourcemap --external:esbuild --external:svelte",
-    "test": "esbuild-dev src/index.test.ts"
+    "test": "c8 --include=src esmo src/index.test.ts"
   },
   "repository": "hyrious/esbuild-plugin-svelte",
   "keywords": [
@@ -29,10 +29,11 @@
     "svelte": "*"
   },
   "devDependencies": {
-    "@hyrious/esbuild-dev": "^0.6.2",
     "@types/estree": "^0.0.50",
     "@types/node": "^16.11.12",
+    "c8": "^7.10.0",
     "esbuild": "^0.14.2",
+    "esno": "^0.12.1",
     "magic-string": "^0.25.7",
     "sourcemap-validator": "^2.1.0",
     "svelte": "^3.44.2",

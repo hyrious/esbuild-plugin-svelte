@@ -1,9 +1,9 @@
-import esbuild, { TransformOptions } from "esbuild";
+import esbuild, { PartialMessage, TransformOptions } from "esbuild";
 import { existsSync } from "fs";
 import { readFile } from "fs/promises";
 import { basename, dirname, resolve } from "path";
 import { PreprocessorGroup } from "svelte/types/compiler/preprocess";
-import { quote, warn } from "./utils";
+import { quote, warn as warn_ } from "./utils";
 
 export type CompilerOptions = NonNullable<
   Exclude<
@@ -14,10 +14,18 @@ export type CompilerOptions = NonNullable<
 
 export interface Options {
   compilerOptions?: CompilerOptions;
+  onwarn?: (
+    message: PartialMessage,
+    defaultHandler?: (message: PartialMessage) => void
+  ) => void;
 }
 
 // based on https://github.com/lukeed/svelte-preprocess-esbuild
 export function typescript(options?: Options): PreprocessorGroup {
+  const onwarn = options?.onwarn;
+  const warn = (warning: PartialMessage): void =>
+    onwarn ? onwarn(warning, warn_) : /* c8 ignore next */ void warn_(warning);
+
   return {
     async script({
       attributes: { lang, src },
@@ -33,10 +41,11 @@ export function typescript(options?: Options): PreprocessorGroup {
           content = await readFile(src, "utf-8");
           dependencies = [src];
         } else {
-          await warn({
+          const warning: PartialMessage = {
             text: `Could not find ${quote(src)} from ${quote(filename)}`,
             location: { file: filename },
-          });
+          };
+          warn(warning);
         }
       }
 
@@ -52,8 +61,8 @@ export function typescript(options?: Options): PreprocessorGroup {
         },
       });
 
-      if (warnings.length > 0) {
-        await warn(warnings);
+      for (const warning of warnings) {
+        warn(warning);
       }
 
       return { code, map, dependencies };

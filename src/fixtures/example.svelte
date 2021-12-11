@@ -3,9 +3,12 @@
 </script>
 
 <script lang="ts">
+  import Other from "./src-nested.svelte";
   let count: number = 0;
 </script>
 
 <button on:click={() => count++}>
   [{name}] count: {count}
 </button>
+
+<Other />

@@ -10,14 +10,11 @@ export interface Options {
   configFile?: string;
   filter?: RegExp;
   preprocess?: PreprocessorGroup | PreprocessorGroup[];
-  /**
-   * @default false
-   */
   emitCss?: boolean;
   compilerOptions?: CompileOptions;
 }
 
-// https://esbuild.github.io/plugins/#svelte-plugin
+// based on https://esbuild.github.io/plugins/#svelte-plugin
 export function svelte(options?: Options): Plugin {
   options ??= {};
   options.filter ??= /\.svelte$/;
