@@ -2,7 +2,7 @@ import { Plugin } from "esbuild";
 import { CompileOptions } from "svelte/types/compiler/interfaces";
 import { PreprocessorGroup } from "svelte/types/compiler/preprocess";
 import { cwd } from "process";
-import { relative, sep } from "path";
+import { basename, relative, sep } from "path";
 import { readFile } from "fs/promises";
 import { compile, preprocess } from "svelte/compiler";
 import { version } from "../package.json";
@@ -66,14 +66,17 @@ export function svelte(options: Options = {}): Plugin {
 
           let { js, css } = compiled;
           if (emitCss) {
-            const fakePath = args.path + ".css";
-            cssMap.set(fakePath, { ...css, source });
+            const fakePath = "./" + basename(filename) + ".css";
+            cssMap.set(fakePath, { ...css, source, path: args.path + ".css" });
             js.code += `\nimport ${quote(fakePath)};`;
           }
 
-          // esbuild doesn't read sources, it requires sourcesContent
-          js.map.sourcesContent = [source];
-          const contents = js.code + `\n//# sourceMappingURL=` + js.map.toUrl();
+          let contents = js.code;
+          if (js.map) {
+            // esbuild doesn't read sources, it requires sourcesContent
+            js.map.sourcesContent = [source];
+            contents += `\n//# sourceMappingURL=` + js.map.toUrl();
+          }
           const warnings = compiled.warnings.map(warning =>
             convertMessage(warning, filename, source)
           );
@@ -86,23 +89,26 @@ export function svelte(options: Options = {}): Plugin {
 
       onResolve({ filter: /\.css$/ }, args => {
         if (!cssMap.has(args.path)) return;
-        // notice: no namespace here, we just pass this path to onLoad
-        // the default (file) namespace will help editing the "sources" field
-        // in sourcemap to let it always be relative to the dist folder
-        return { path: args.path };
+
+        const data = cssMap.get(args.path);
+        cssMap.delete(args.path);
+
+        return { path: data.path, pluginData: data };
       });
 
       onLoad({ filter: /\.css$/ }, args => {
-        if (!cssMap.has(args.path)) return;
+        if (!args.pluginData) return;
 
-        const { code, map, source } = cssMap.get(args.path)!;
-        // prevent being the same name as js sources
-        map.sources[0] += ".css";
-        map.sourcesContent = [source];
-        const contents = code + `\n/*# sourceMappingURL=${map.toUrl()} */`;
+        const { code, map, source } = args.pluginData;
+        if (code === undefined) return;
 
-        // have loaded this file, remove it from memory
-        cssMap.delete(args.path);
+        let contents = code;
+        if (map) {
+          // prevent being the same name as js sources
+          map.sources[0] += ".css";
+          map.sourcesContent = [source];
+          contents += `\n/*# sourceMappingURL=${map.toUrl()} */`;
+        }
 
         return { contents, loader: "css" };
       });

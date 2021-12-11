@@ -6,7 +6,14 @@ esbuild
   .build({
     entryPoints: ["./main.ts"],
     bundle: true,
-    plugins: [svelte({ emitCss: true, compilerOptions: { css: false } })],
+    plugins: [
+      svelte({
+        emitCss: true,
+        compilerOptions: {
+          css: false,
+        },
+      }),
+    ],
     outdir: "./dist",
     sourcemap: true,
   })
