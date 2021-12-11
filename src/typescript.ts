@@ -35,11 +35,13 @@ export function typescript(options?: Options): PreprocessorGroup {
       if (lang !== "ts") return;
 
       let dependencies: string[] | undefined;
+      let sourcefile = basename(filename);
       if (typeof src === "string") {
-        src = resolve(dirname(filename), src);
-        if (existsSync(src)) {
-          content = await readFile(src, "utf-8");
-          dependencies = [src];
+        const resolved = resolve(dirname(filename), src);
+        if (existsSync(resolved)) {
+          content = await readFile(resolved, "utf-8");
+          dependencies = [resolved];
+          sourcefile = src;
         } else {
           const warning: PartialMessage = {
             text: `Could not find ${quote(src)} from ${quote(filename)}`,
@@ -51,7 +53,7 @@ export function typescript(options?: Options): PreprocessorGroup {
 
       const { code, map, warnings } = await esbuild.transform(content, {
         loader: "ts",
-        sourcefile: basename(filename),
+        sourcefile,
         sourcemap: "external",
         tsconfigRaw: {
           compilerOptions: {

@@ -2,7 +2,7 @@ import { PartialMessage, Plugin } from "esbuild";
 import { CompileOptions } from "svelte/types/compiler/interfaces";
 import { PreprocessorGroup } from "svelte/types/compiler/preprocess";
 import { cwd } from "process";
-import { basename, relative, sep } from "path";
+import { basename, dirname, relative, resolve, sep } from "path";
 import { readFile } from "fs/promises";
 import { compile, preprocess } from "svelte/compiler";
 import { version } from "../package.json";
@@ -74,16 +74,33 @@ export function svelte(options: Options = {}): Plugin {
           });
 
           let { js, css } = compiled;
+          const base = basename(filename);
           if (emitCss && css.code) {
-            const fakePath = "./" + basename(filename) + ".css";
+            const fakePath = "./" + base + ".css";
             cssMap.set(fakePath, { ...css, source, path: args.path + ".css" });
             js.code += `\nimport ${quote(fakePath)};`;
           }
 
           let contents = js.code;
           if (js.map) {
-            // esbuild doesn't read sources, it requires sourcesContent
-            js.map.sourcesContent = [source];
+            // svelte compile will drop all sourcesContent, we fix them
+            // in case the code uses `src="./external.ts"`,
+            // there may be not only 1 source
+            const sourcesContent: (string | null)[] = [];
+            for (const src of js.map.sources) {
+              if (src === base) {
+                sourcesContent.push(source);
+              } else {
+                const path = resolve(dirname(args.path), src);
+                try {
+                  sourcesContent.push(await readFile(path, "utf-8"));
+                } catch (e) {
+                  sourcesContent.push(null);
+                  warnings.push(convertMessage(e, filename, source));
+                }
+              }
+            }
+            js.map.sourcesContent = sourcesContent;
             contents += `\n//# sourceMappingURL=` + js.map.toUrl();
           }
           for (const warning of compiled.warnings) {
