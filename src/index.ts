@@ -1,4 +1,4 @@
-import { Plugin } from "esbuild";
+import { PartialMessage, Plugin } from "esbuild";
 import { CompileOptions } from "svelte/types/compiler/interfaces";
 import { PreprocessorGroup } from "svelte/types/compiler/preprocess";
 import { cwd } from "process";
@@ -25,9 +25,7 @@ const WarnOnMultipleCss =
 export function svelte(options: Options = {}): Plugin {
   const filter = options.filter ?? /\.svelte$/;
   const processor =
-    options.preprocess === false
-      ? false
-      : [...makeArray(options.preprocess ?? []), typescript()];
+    options.preprocess === false ? false : makeArray(options.preprocess ?? []);
   const emitCss = options.emitCss;
   const compilerOptions = options.compilerOptions;
 
@@ -44,21 +42,32 @@ export function svelte(options: Options = {}): Plugin {
       const cssMap = new Map<string, any>();
 
       onLoad({ filter }, async args => {
+        const watchFiles = [args.path];
         const source = await readFile(args.path, "utf8");
         const filename = "." + sep + relative(root, args.path);
 
         try {
           let code: string, sourcemap: string | object | undefined;
+          const warnings: PartialMessage[] = [];
+
           if (processor !== false) {
-            const processed = await preprocess(source, processor, { filename });
+            const onwarn = (warning: PartialMessage) => warnings.push(warning);
+            const preprocessor = [...processor, typescript({ onwarn })];
+            const processed = await preprocess(source, preprocessor, {
+              filename,
+            });
             code = processed.code;
             sourcemap = processed.map;
+            if (processed.dependencies) {
+              for (const dep of processed.dependencies) {
+                watchFiles.push(dep);
+              }
+            }
           } else {
             code = source;
           }
 
           const compiled = compile(code, {
-            generate: "dom",
             ...compilerOptions,
             filename,
             sourcemap,
@@ -77,11 +86,11 @@ export function svelte(options: Options = {}): Plugin {
             js.map.sourcesContent = [source];
             contents += `\n//# sourceMappingURL=` + js.map.toUrl();
           }
-          const warnings = compiled.warnings.map(warning =>
-            convertMessage(warning, filename, source)
-          );
+          for (const warning of compiled.warnings) {
+            warnings.push(convertMessage(warning, filename, source));
+          }
 
-          return { contents, warnings };
+          return { contents, warnings, watchFiles };
         } catch (e) {
           return { errors: [convertMessage(e, filename, source)] };
         }
