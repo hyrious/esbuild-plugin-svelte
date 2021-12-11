@@ -26,14 +26,15 @@ import { typescript } from "@hyrious/esbuild-plugin-svelte";
 
 // in svelte.config.js
 export default {
-  preprocess: [typescript()];
+  preprocess: [typescript({
+    compilerOptions: {}
+  })];
 }
 ```
 
 ### Options
 
 ```js
-import sveltePreprocess from "svelte-preprocess";
 import { typescript } from "@hyrious/esbuild-plugin-svelte";
 
 svelte({
@@ -71,6 +72,13 @@ See [`svelte.compile`](https://svelte.dev/docs#svelte_compile).
 - [sveltejs/vite-plugin-svelte](https://github.com/sveltejs/vite-plugin-svelte)
 - [EMH333/esbuild-svelte](https://github.com/EMH333/esbuild-svelte)
 - [rixo/svelte-hmr](https://github.com/sveltejs/svelte-hmr)
+
+## Changelog
+
+### 0.1.2
+
+- Improved handling `src="./external-file.ts"`.
+- Fixed crash when setting `emitCss: true` with no `<style>` tag.
 
 ## License
 
