@@ -7,17 +7,19 @@ import { readFile } from "fs/promises";
 import { compile, preprocess } from "svelte/compiler";
 import { version } from "../package.json";
 import { typescript } from "./typescript";
-import { convertMessage, makeArray, quote } from "./utils";
+import { convertMessage, makeArray, quote, warn } from "./utils";
 
 export { version, typescript };
 
 export interface Options {
-  configFile?: string;
   filter?: RegExp;
   preprocess?: PreprocessorGroup | PreprocessorGroup[] | false;
   emitCss?: boolean;
   compilerOptions?: CompileOptions;
 }
+
+const WarnOnMultipleCss =
+  "You have set `emitCss: true`, it is recommended to also set `compilerOptions: { css: false }`.";
 
 // based on https://esbuild.github.io/plugins/#svelte-plugin
 export function svelte(options: Options = {}): Plugin {
@@ -26,14 +28,20 @@ export function svelte(options: Options = {}): Plugin {
     options.preprocess === false
       ? false
       : [...makeArray(options.preprocess ?? []), typescript()];
-  const compilerOptions = options.compilerOptions;
   const emitCss = options.emitCss;
+  const compilerOptions = options.compilerOptions;
+
+  const warnOnStart = emitCss && compilerOptions?.css !== false;
 
   return {
     name: "svelte",
-    setup({ onLoad, onResolve }) {
+    setup({ onLoad, onResolve, onStart }) {
+      if (warnOnStart) {
+        onStart(() => ({ warnings: [{ text: WarnOnMultipleCss }] }));
+      }
+
       const root = cwd();
-      const cssMap = new Map<string, { code: string; map: any }>();
+      const cssMap = new Map<string, any>();
 
       onLoad({ filter }, async args => {
         const source = await readFile(args.path, "utf8");
@@ -59,7 +67,7 @@ export function svelte(options: Options = {}): Plugin {
           let { js, css } = compiled;
           if (emitCss) {
             const fakePath = args.path + ".css";
-            cssMap.set(fakePath, css);
+            cssMap.set(fakePath, { ...css, source });
             js.code += `\nimport ${quote(fakePath)};`;
           }
 
@@ -78,16 +86,25 @@ export function svelte(options: Options = {}): Plugin {
 
       onResolve({ filter: /\.css$/ }, args => {
         if (!cssMap.has(args.path)) return;
-
-        return { path: args.path, namespace: "svelte-fake-css" };
+        // notice: no namespace here, we just pass this path to onLoad
+        // the default (file) namespace will help editing the "sources" field
+        // in sourcemap to let it always be relative to the dist folder
+        return { path: args.path };
       });
 
-      onLoad({ filter: /()/, namespace: "svelte-fake-css" }, args => {
-        const { code, map } = cssMap.get(args.path)!;
-        console.log(code, map);
-        // TODO: build fake sourcemap
+      onLoad({ filter: /\.css$/ }, args => {
+        if (!cssMap.has(args.path)) return;
 
-        return { contents: code, loader: "css" };
+        const { code, map, source } = cssMap.get(args.path)!;
+        // prevent being the same name as js sources
+        map.sources[0] += ".css";
+        map.sourcesContent = [source];
+        const contents = code + `\n/*# sourceMappingURL=${map.toUrl()} */`;
+
+        // have loaded this file, remove it from memory
+        cssMap.delete(args.path);
+
+        return { contents, loader: "css" };
       });
     },
   };

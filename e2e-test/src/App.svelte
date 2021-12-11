@@ -3,3 +3,9 @@
 </script>
 
 <button on:click={() => count++}>count: {count}</button>
+
+<style>
+  button {
+    color: red;
+  }
+</style>

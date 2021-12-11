@@ -1,5 +1,8 @@
 {
   "scripts": {
     "build": "esmo build.ts"
+  },
+  "devDependencies": {
+    "estree-walker": "^3.0.0"
   }
 }

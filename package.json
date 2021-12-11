@@ -34,6 +34,7 @@
     "c8": "^7.10.0",
     "esbuild": "^0.14.2",
     "esno": "^0.12.1",
+    "estree-walker": "^3.0.0",
     "magic-string": "^0.25.7",
     "sourcemap-validator": "^2.1.0",
     "svelte": "^3.44.2",
