@@ -74,7 +74,7 @@ export function svelte(options: Options = {}): Plugin {
           });
 
           let { js, css } = compiled;
-          if (emitCss) {
+          if (emitCss && css.code) {
             const fakePath = "./" + basename(filename) + ".css";
             cssMap.set(fakePath, { ...css, source, path: args.path + ".css" });
             js.code += `\nimport ${quote(fakePath)};`;
