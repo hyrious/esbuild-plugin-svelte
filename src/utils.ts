@@ -1,4 +1,4 @@
-import esbuild, { Location, PartialMessage } from "esbuild";
+import { formatMessages, Location, PartialMessage } from "esbuild";
 import { Warning } from "svelte/types/compiler/interfaces";
 
 export const quote = JSON.stringify.bind(JSON);
@@ -14,7 +14,7 @@ export async function warn(
   } else {
     arg = message;
   }
-  const result = await esbuild.formatMessages(arg, {
+  const result = await formatMessages(arg, {
     kind: "warning",
     color: true,
   });

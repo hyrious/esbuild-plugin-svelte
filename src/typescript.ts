@@ -1,4 +1,4 @@
-import esbuild, { PartialMessage, TransformOptions } from "esbuild";
+import { transform, PartialMessage, TransformOptions } from "esbuild";
 import { existsSync } from "fs";
 import { readFile } from "fs/promises";
 import { basename, dirname, resolve } from "path";
@@ -51,7 +51,7 @@ export function typescript(options?: Options): PreprocessorGroup {
         }
       }
 
-      const { code, map, warnings } = await esbuild.transform(content, {
+      const { code, map, warnings } = await transform(content, {
         loader: "ts",
         sourcefile,
         sourcemap: "external",

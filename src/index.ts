@@ -141,3 +141,5 @@ export function svelte(options: Options = {}): Plugin {
     },
   };
 }
+
+export default svelte;
