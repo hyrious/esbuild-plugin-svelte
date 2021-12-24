@@ -75,6 +75,12 @@ See [`svelte.compile`](https://svelte.dev/docs#svelte_compile).
 
 ## Changelog
 
+### 0.1.4
+
+- Make `svelte()` also the default export.
+- Completely removed source map text by appending an empty sourcemap.\
+  Note that esbuild will still output the sourcemap file.
+
 ### 0.1.2
 
 - Improved handling `src="./external-file.ts"`.

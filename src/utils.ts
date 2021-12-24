@@ -3,6 +3,9 @@ import { Warning } from "svelte/types/compiler/interfaces";
 
 export const quote = JSON.stringify.bind(JSON);
 
+export const EmptySourceMap =
+  "data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIiJdLCJtYXBwaW5ncyI6IkEifQ==";
+
 export async function warn(
   message: string | PartialMessage | PartialMessage[]
 ) {

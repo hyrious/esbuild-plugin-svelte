@@ -7,7 +7,7 @@ import { readFile } from "fs/promises";
 import { compile, preprocess } from "svelte/compiler";
 import { version } from "../package.json";
 import { typescript } from "./typescript";
-import { convertMessage, makeArray, quote } from "./utils";
+import { convertMessage, EmptySourceMap, makeArray, quote } from "./utils";
 
 export { version, typescript };
 
@@ -27,9 +27,16 @@ export function svelte(options: Options = {}): Plugin {
   const processor =
     options.preprocess === false ? false : makeArray(options.preprocess ?? []);
   const emitCss = options.emitCss;
-  const compilerOptions = options.compilerOptions;
+  const compilerOptions = options.compilerOptions ?? {};
 
   const warnOnStart = emitCss && compilerOptions?.css !== false;
+
+  let enableSourcemap = { js: true, css: true };
+  if (compilerOptions.enableSourcemap === false) {
+    enableSourcemap = { js: false, css: false };
+  } else if (typeof compilerOptions.enableSourcemap === "object") {
+    enableSourcemap = compilerOptions.enableSourcemap;
+  }
 
   return {
     name: "svelte",
@@ -102,6 +109,8 @@ export function svelte(options: Options = {}): Plugin {
             }
             js.map.sourcesContent = sourcesContent;
             contents += `\n//# sourceMappingURL=` + js.map.toUrl();
+          } else if (!enableSourcemap.js) {
+            contents += `\n//# sourceMappingURL=` + EmptySourceMap;
           }
           for (const warning of compiled.warnings) {
             warnings.push(convertMessage(warning, filename, source));
@@ -134,6 +143,8 @@ export function svelte(options: Options = {}): Plugin {
           map.sources[0] += ".css";
           map.sourcesContent = [source];
           contents += `\n/*# sourceMappingURL=${map.toUrl()} */`;
+        } else if (!enableSourcemap.css) {
+          contents += `\n/*# sourceMappingURL=${EmptySourceMap} */`;
         }
 
         return { contents, loader: "css" };

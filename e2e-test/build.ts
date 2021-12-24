@@ -11,6 +11,10 @@ esbuild
         emitCss: true,
         compilerOptions: {
           css: false,
+          enableSourcemap: {
+            js: true,
+            css: false,
+          },
         },
       }),
     ],
