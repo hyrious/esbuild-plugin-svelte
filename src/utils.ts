@@ -50,3 +50,11 @@ export function convertMessage(
   }
   return { text: message, location };
 }
+
+export function b64enc(b: string) {
+  return Buffer.from(b).toString("base64");
+}
+
+export function toUrl(map: any) {
+  return "data:application/json;charset=utf-8;base64," + b64enc(map.toString());
+}

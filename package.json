@@ -33,13 +33,13 @@
     "svelte": "*"
   },
   "devDependencies": {
-    "@hyrious/esbuild-dev": "^0.7.1",
-    "@types/node": "^17.0.4",
-    "c8": "^7.10.0",
-    "esbuild": "^0.14.8",
+    "@hyrious/esbuild-dev": "^0.7.2",
+    "@types/node": "^17.0.8",
+    "c8": "^7.11.0",
+    "esbuild": "^0.14.11",
     "sourcemap-validator": "^2.1.0",
-    "svelte": "^3.44.3",
-    "uvu": "^0.5.2"
+    "svelte": "^3.46.2",
+    "uvu": "^0.5.3"
   },
   "engines": {
     "node": ">=14"

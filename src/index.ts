@@ -7,7 +7,13 @@ import { readFile } from "fs/promises";
 import { compile, preprocess } from "svelte/compiler";
 import { version } from "../package.json";
 import { typescript } from "./typescript";
-import { convertMessage, EmptySourceMap, makeArray, quote } from "./utils";
+import {
+  convertMessage,
+  EmptySourceMap,
+  makeArray,
+  quote,
+  toUrl,
+} from "./utils";
 
 export { version, typescript };
 
@@ -108,7 +114,7 @@ export function svelte(options: Options = {}): Plugin {
               }
             }
             js.map.sourcesContent = sourcesContent;
-            contents += `\n//# sourceMappingURL=` + js.map.toUrl();
+            contents += `\n//# sourceMappingURL=` + toUrl(js.map);
           } else if (!enableSourcemap.js) {
             contents += `\n//# sourceMappingURL=` + EmptySourceMap;
           }
@@ -142,7 +148,7 @@ export function svelte(options: Options = {}): Plugin {
           // prevent being the same name as js sources
           map.sources[0] += ".css";
           map.sourcesContent = [source];
-          contents += `\n/*# sourceMappingURL=${map.toUrl()} */`;
+          contents += `\n/*# sourceMappingURL=${toUrl(map)} */`;
         } else if (!enableSourcemap.css) {
           contents += `\n/*# sourceMappingURL=${EmptySourceMap} */`;
         }

@@ -4,8 +4,8 @@
 </script>
 
 <button on:click={() => count++}>count: {count}</button>
-
 <External />
+<p>🚧</p>
 
 <style>
   button {
