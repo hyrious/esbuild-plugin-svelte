@@ -37,12 +37,12 @@ export function convertMessage(
 ) {
   let location: Partial<Location> | undefined;
   if (start && end) {
-    let lineText = source.split(/\r\n|\r|\n/g)[start.line - 1];
+    let lineText = source.split(/\r\n|\r|\n/g)[start.line];
     /* c8 ignore next */
     let lineEnd = start.line === end.line ? end.column : lineText.length;
     location = {
       file: filename,
-      line: start.line,
+      line: start.line + 1,
       column: start.column,
       length: lineEnd - start.column,
       lineText,

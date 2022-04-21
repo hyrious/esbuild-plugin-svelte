@@ -40,8 +40,8 @@ utils("convertMessage", () => {
   const message = convertMessage(
     {
       message: "hello",
-      start: { line: 1, column: 2 },
-      end: { line: 3, column: 4 },
+      start: { line: 0, column: 2 },
+      end: { line: 0, column: 4 },
       code: `12345`,
     },
     "src/filename.svelte",
@@ -53,7 +53,7 @@ utils("convertMessage", () => {
       file: "src/filename.svelte",
       line: 1,
       column: 2,
-      length: 3,
+      length: 2,
       lineText: `12345`,
     },
   });

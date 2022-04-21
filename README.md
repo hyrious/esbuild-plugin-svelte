@@ -75,6 +75,14 @@ See [`svelte.compile`](https://svelte.dev/docs#svelte_compile).
 
 ## Changelog
 
+### 0.1.6
+
+- Fixed invalid character error because of svelte using the `btoa` in node side.
+- Fixed incorrect line numbers in warnings.\
+  However I still don't know what is wrong here.
+  The example in esbuild's website does have `start.line - 1`, but my recent test
+  shows that it should be `start.line`.
+
 ### 0.1.4
 
 - Make `svelte()` also the default export.
