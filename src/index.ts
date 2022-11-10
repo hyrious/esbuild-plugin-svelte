@@ -24,9 +24,6 @@ export interface Options {
   compilerOptions?: CompileOptions;
 }
 
-const WarnOnMultipleCss =
-  "You have set `emitCss: true`, it is recommended to also set `compilerOptions: { css: false }`.";
-
 // based on https://esbuild.github.io/plugins/#svelte-plugin
 export function svelte(options: Options = {}): Plugin {
   const filter = options.filter ?? /\.svelte$/;
@@ -34,8 +31,6 @@ export function svelte(options: Options = {}): Plugin {
     options.preprocess === false ? false : makeArray(options.preprocess ?? []);
   const emitCss = options.emitCss;
   const compilerOptions = options.compilerOptions ?? {};
-
-  const warnOnStart = emitCss && compilerOptions?.css !== false;
 
   let enableSourcemap = { js: true, css: true };
   if (compilerOptions.enableSourcemap === false) {
@@ -46,10 +41,7 @@ export function svelte(options: Options = {}): Plugin {
 
   return {
     name: "svelte",
-    setup({ onLoad, onResolve, onStart }) {
-      if (warnOnStart) {
-        onStart(() => ({ warnings: [{ text: WarnOnMultipleCss }] }));
-      }
+    setup({ onLoad, onResolve }) {
 
       const root = cwd();
       const cssMap = new Map<string, any>();

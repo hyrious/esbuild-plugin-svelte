@@ -7,16 +7,7 @@ esbuild
     entryPoints: ["./main.ts"],
     bundle: true,
     plugins: [
-      svelte({
-        emitCss: true,
-        compilerOptions: {
-          css: false,
-          enableSourcemap: {
-            js: true,
-            css: false,
-          },
-        },
-      }),
+      svelte(),
     ],
     outdir: "./dist",
     sourcemap: true,
