@@ -1,6 +1,6 @@
 {
   "name": "@hyrious/esbuild-plugin-svelte",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Load .svelte files in esbuild.",
   "main": "dist/index.js",
   "exports": {
