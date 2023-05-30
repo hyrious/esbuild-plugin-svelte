@@ -20,16 +20,6 @@ esbuild.build({
   entryPoints: ["main.js"],
   plugins: [svelte()],
 });
-
-// standalone typescript preprocessor powered by esbuild
-import { typescript } from "@hyrious/esbuild-plugin-svelte";
-
-// in svelte.config.js
-export default {
-  preprocess: [typescript({
-    compilerOptions: {}
-  })];
-}
 ```
 
 ### Options
@@ -52,6 +42,7 @@ The regexp passed to [`onLoad()`](https://esbuild.github.io/plugins/#load-callba
 ### preprocess
 
 If set, it will run `svelte.preprocess(source, processors)` before `svelte.compile()`.
+
 By default it will append the `typescript()` preprocessor, which is powered by esbuild.
 If you want to totally turn off preprocessing, set this option to `false`.
 
@@ -61,7 +52,14 @@ Whether to emit `<style>` parts of your svelte components to a .css file.
 It is implemented by appending an `import "path/to/component.svelte.css"`
 statement to the end of the compiled js code.
 
-If you set this to `true`, it is also recommended to turn off [`compilerOptions.css`](https://svelte.dev/docs#svelte_compile).
+If you set this to `true`, it will add these default config to compiler options:
+
+```js
+{
+  css: "external",
+  enableSourcemap: { js: true, css: false },
+}
+```
 
 ### compilerOptions
 
@@ -74,6 +72,11 @@ See [`svelte.compile`](https://svelte.dev/docs#svelte_compile).
 - [rixo/svelte-hmr](https://github.com/sveltejs/svelte-hmr)
 
 ## Changelog
+
+### 0.1.8
+
+- When `emitCss` is true, turn off css injecting and sourcemap by default.
+- Change the CSS sourcemap name (if enabled) to `App.svelte?style.css`.
 
 ### 0.1.6
 

@@ -10,15 +10,16 @@
     },
     "./package.json": "./package.json"
   },
-  "types": "./src/index.ts",
+  "types": "./dist/index.d.ts",
   "files": [
     "src",
     "dist"
   ],
   "scripts": {
-    "build": "npm run build-cjs && npm run build-esm",
-    "build-cjs": "esbuild src/index.ts --bundle --platform=node --target=node14 --format=cjs --outfile=dist/index.js --sourcemap --external:esbuild --external:svelte",
-    "build-esm": "esbuild src/index.ts --bundle --platform=node --target=node14 --format=esm --outfile=dist/index.mjs --sourcemap --external:esbuild --external:svelte",
+    "build": "npm run build-cjs && npm run build-esm && npm run build-types",
+    "build-cjs": "esbuild src/index.ts --bundle --platform=node --target=node14.18,node16 --format=cjs --outfile=dist/index.js --sourcemap --external:esbuild --external:svelte",
+    "build-esm": "esbuild src/index.ts --bundle --platform=node --target=node14.18,node16 --format=esm --outfile=dist/index.mjs --sourcemap --external:esbuild --external:svelte",
+    "build-types": "dts src/index.ts -o dist/index.d.ts",
     "test": "c8 --include=src esbuild-dev --no-warnings --loader src/index.test.ts"
   },
   "repository": "hyrious/esbuild-plugin-svelte",
@@ -33,15 +34,16 @@
     "svelte": "*"
   },
   "devDependencies": {
-    "@hyrious/esbuild-dev": "^0.8.6",
+    "@hyrious/dts": "^0.1.9",
+    "@hyrious/esbuild-dev": "^0.10.2",
     "@types/node": "^18.11.9",
-    "c8": "^7.12.0",
-    "esbuild": "^0.15.13",
+    "c8": "^7.14.0",
+    "esbuild": "^0.17.19",
     "sourcemap-validator": "^2.1.0",
-    "svelte": "^3.53.0",
+    "svelte": "^3.59.1",
     "uvu": "^0.5.6"
   },
   "engines": {
-    "node": ">=14"
+    "node": "^14.18.0 || >=16.0.0"
   }
 }

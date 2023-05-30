@@ -7,7 +7,9 @@ esbuild
     entryPoints: ["./main.ts"],
     bundle: true,
     plugins: [
-      svelte(),
+      svelte({
+        emitCss: true,
+      }),
     ],
     outdir: "./dist",
     sourcemap: true,

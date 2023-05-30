@@ -27,10 +27,12 @@ export interface Options {
 // based on https://esbuild.github.io/plugins/#svelte-plugin
 export function svelte(options: Options = {}): Plugin {
   const filter = options.filter ?? /\.svelte$/;
-  const processor =
-    options.preprocess === false ? false : makeArray(options.preprocess ?? []);
-  const emitCss = options.emitCss;
   const compilerOptions = options.compilerOptions ?? {};
+
+  if (options.emitCss) {
+    compilerOptions.css ??= "external";
+    compilerOptions.enableSourcemap ??= { js: true, css: false };
+  }
 
   let enableSourcemap = { js: true, css: true };
   if (compilerOptions.enableSourcemap === false) {
@@ -55,9 +57,9 @@ export function svelte(options: Options = {}): Plugin {
           let code: string, sourcemap: string | object | undefined;
           const warnings: PartialMessage[] = [];
 
-          if (processor !== false) {
+          if (options.preprocess !== false) {
             const onwarn = (warning: PartialMessage) => warnings.push(warning);
-            const preprocessor = [...processor, typescript({ onwarn })];
+            const preprocessor = [...makeArray(options.preprocess ?? []), typescript({ onwarn })];
             const processed = await preprocess(source, preprocessor, {
               filename,
             });
@@ -80,7 +82,7 @@ export function svelte(options: Options = {}): Plugin {
 
           let { js, css } = compiled;
           const base = basename(filename);
-          if (emitCss && css.code) {
+          if (options.emitCss && css.code) {
             const fakePath = "./" + base + ".css";
             cssMap.set(fakePath, { ...css, source, path: args.path + ".css" });
             js.code += `\nimport ${quote(fakePath)};`;
@@ -138,7 +140,7 @@ export function svelte(options: Options = {}): Plugin {
         let contents = code;
         if (map) {
           // prevent being the same name as js sources
-          map.sources[0] += ".css";
+          map.sources[0] += "?style.css";
           map.sourcesContent = [source];
           contents += `\n/*# sourceMappingURL=${toUrl(map)} */`;
         } else if (!enableSourcemap.css) {
