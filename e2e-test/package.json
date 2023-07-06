@@ -1,5 +1,0 @@
-{
-  "scripts": {
-    "build": "esbuild-dev build.ts"
-  }
-}

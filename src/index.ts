@@ -1,156 +1,189 @@
-import { PartialMessage, Plugin } from "esbuild";
-import { CompileOptions } from "svelte/types/compiler/interfaces";
-import { PreprocessorGroup } from "svelte/types/compiler/preprocess";
-import { cwd } from "process";
-import { basename, dirname, relative, resolve, sep } from "path";
-import { readFile } from "fs/promises";
-import { compile, preprocess } from "svelte/compiler";
-import { version } from "../package.json";
-import { typescript } from "./typescript";
-import {
-  convertMessage,
-  EmptySourceMap,
-  makeArray,
-  quote,
-  toUrl,
-} from "./utils";
+import type { Location, PartialMessage, Plugin } from 'esbuild'
+import type { CompileOptions, PreprocessorGroup } from 'svelte/compiler'
+import type { Warning } from 'svelte/types/compiler/interfaces'
 
-export { version, typescript };
+import { readFile } from 'fs/promises'
+import { basename, relative, sep } from 'path'
+import { compile, preprocess } from 'svelte/compiler'
+import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping'
+import { makeArray, typescript } from './typescript'
 
-export interface Options {
-  filter?: RegExp;
-  preprocess?: PreprocessorGroup | PreprocessorGroup[] | false;
-  emitCss?: boolean;
-  compilerOptions?: CompileOptions;
+export { version } from '../package.json'
+
+export { typescript }
+
+const EmptySourceMap =
+  'data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIiJdLCJtYXBwaW5ncyI6IkEifQ=='
+
+function b64enc(b: string) {
+  return Buffer.from(b).toString('base64')
 }
 
-// based on https://esbuild.github.io/plugins/#svelte-plugin
+function toUrl(map: any) {
+  return 'data:application/json;charset=utf-8;base64,' + b64enc(map.toString())
+}
+
+export interface Options {
+  /** Passed to [`onLoad()`](https://esbuild.github.io/plugins/#load-callbacks) */
+  filter?: RegExp
+  /** Svelte preprocessors, defaults to a TypeScript processor powered by esbuild. */
+  preprocess?: PreprocessorGroup | PreprocessorGroup[] | false
+  /** If true, it will emit `import "component.svelte.css"` at the end of the file to let esbuild bundle styles. */
+  emitCss?: boolean
+  /** See [svelte compiler options](https://svelte.dev/docs/svelte-compiler#types-compileoptions). */
+  compilerOptions?: CompileOptions
+}
+
 export function svelte(options: Options = {}): Plugin {
-  const filter = options.filter ?? /\.svelte$/;
-  const compilerOptions = options.compilerOptions ?? {};
+  const filter = options.filter ?? /\.svelte$/
+  const compilerOptions = options.compilerOptions ?? {}
 
   if (options.emitCss) {
-    compilerOptions.css ??= "external";
-    compilerOptions.enableSourcemap ??= { js: true, css: false };
+    compilerOptions.css ??= 'external'
+    compilerOptions.enableSourcemap ??= { js: true, css: false }
   }
 
-  let enableSourcemap = { js: true, css: true };
+  let enableSourcemap = { js: true, css: true }
   if (compilerOptions.enableSourcemap === false) {
-    enableSourcemap = { js: false, css: false };
-  } else if (typeof compilerOptions.enableSourcemap === "object") {
-    enableSourcemap = compilerOptions.enableSourcemap;
+    enableSourcemap = { js: false, css: false }
+  } else if (typeof compilerOptions.enableSourcemap === 'object') {
+    enableSourcemap = compilerOptions.enableSourcemap
   }
 
   return {
-    name: "svelte",
-    setup({ onLoad, onResolve }) {
+    name: 'svelte',
+    setup({ esbuild, onLoad, onResolve }) {
+      const root = process.cwd()
+      const cssMap = new Map<string, any>()
 
-      const root = cwd();
-      const cssMap = new Map<string, any>();
-
-      onLoad({ filter }, async args => {
-        const watchFiles = [args.path];
-        const source = await readFile(args.path, "utf8");
-        const filename = "." + sep + relative(root, args.path);
+      onLoad({ filter }, async (args) => {
+        const watchFiles = [args.path]
+        const source = await readFile(args.path, 'utf8')
+        const filename = '.' + sep + relative(root, args.path)
 
         try {
-          let code: string, sourcemap: string | object | undefined;
-          const warnings: PartialMessage[] = [];
+          let code: string, sourcemap: any
+          let warnings: PartialMessage[] = []
 
           if (options.preprocess !== false) {
-            const onwarn = (warning: PartialMessage) => warnings.push(warning);
-            const preprocessor = [...makeArray(options.preprocess ?? []), typescript({ onwarn })];
-            const processed = await preprocess(source, preprocessor, {
-              filename,
-            });
-            code = processed.code;
-            sourcemap = processed.map;
-            if (processed.dependencies) {
-              for (const dep of processed.dependencies) {
-                watchFiles.push(dep);
+            const onwarn = (w: PartialMessage) => warnings.push(w)
+            const preprocessor = makeArray(options.preprocess ?? [])
+            preprocessor.push(typescript({ esbuild, onwarn }))
+            const processed = await preprocess(source, preprocessor, { filename })
+            code = processed.code
+            sourcemap = processed.map
+            if (processed.dependencies) for (const dep of processed.dependencies) watchFiles.push(dep)
+          } else {
+            code = source
+          }
+
+          if (sourcemap) {
+            for (let i = 0; i < sourcemap.sources.length; ++i) {
+              if (sourcemap.sources[i] === filename) {
+                sourcemap.sources[i] = basename(filename)
               }
             }
-          } else {
-            code = source;
           }
 
           const compiled = compile(code, {
             ...compilerOptions,
             filename,
             sourcemap,
-          });
+          })
 
-          let { js, css } = compiled;
-          const base = basename(filename);
+          let { js, css } = compiled
+          let entry = basename(filename)
           if (options.emitCss && css.code) {
-            const fakePath = "./" + base + ".css";
-            cssMap.set(fakePath, { ...css, source, path: args.path + ".css" });
-            js.code += `\nimport ${quote(fakePath)};`;
+            const fakePath = `./${entry}.css` // './' is intended here because it is source code
+            cssMap.set(fakePath, { ...css, source, path: args.path + '.css' })
+            js.code += `\nimport ${JSON.stringify(fakePath)};`
           }
 
-          let contents = js.code;
+          let contents = js.code
           if (js.map) {
-            // svelte compile will drop all sourcesContent, we fix them
-            // in case the code uses `src="./external.ts"`,
-            // there may be not only 1 source
-            const sourcesContent: (string | null)[] = [];
+            // svelte compiler drops all sourcesContent, we fix them for esbuild to pick up.
+            // in case the code uses <script src="external-file">, there mat not be only 1 source.
+            const sourcesContent: Array<string | null> = []
             for (const src of js.map.sources) {
-              if (src === base) {
-                sourcesContent.push(source);
+              // svelte compiler also drops the dirname of the 'filename' passed in.
+              if (src === entry) {
+                sourcesContent.push(source)
               } else {
-                const path = resolve(dirname(args.path), src);
-                try {
-                  sourcesContent.push(await readFile(path, "utf-8"));
-                } catch (e) {
-                  sourcesContent.push(null);
-                  warnings.push(convertMessage(e, filename, source));
-                }
+                // src="external-file" does not get a sourcemap, feature, not bug.
+                sourcesContent.push(null)
               }
             }
-            js.map.sourcesContent = sourcesContent;
-            contents += `\n//# sourceMappingURL=` + toUrl(js.map);
+            js.map.sourcesContent = sourcesContent
+            contents += `\n//# sourceMappingURL=${toUrl(js.map)}`
           } else if (!enableSourcemap.js) {
-            contents += `\n//# sourceMappingURL=` + EmptySourceMap;
-          }
-          for (const warning of compiled.warnings) {
-            warnings.push(convertMessage(warning, filename, source));
+            contents += `\n//# sourceMappingURL=${EmptySourceMap}`
           }
 
-          return { contents, warnings, watchFiles };
-        } catch (e) {
-          return { errors: [convertMessage(e, filename, source)] };
+          for (const w of compiled.warnings) {
+            warnings.push(convertMessage(w, args.path, source, sourcemap))
+          }
+
+          return { contents, warnings, watchFiles }
+        } catch (err) {
+          return { errors: [convertMessage(err, filename, source, null)] }
         }
-      });
+      })
 
-      onResolve({ filter: /\.css$/ }, args => {
-        if (!cssMap.has(args.path)) return;
-
-        const data = cssMap.get(args.path);
-        cssMap.delete(args.path);
-
-        return { path: data.path, pluginData: data };
-      });
-
-      onLoad({ filter: /\.css$/ }, args => {
-        if (!args.pluginData) return;
-
-        const { code, map, source } = args.pluginData;
-        if (code === undefined) return;
-
-        let contents = code;
-        if (map) {
-          // prevent being the same name as js sources
-          map.sources[0] += "?style.css";
-          map.sourcesContent = [source];
-          contents += `\n/*# sourceMappingURL=${toUrl(map)} */`;
-        } else if (!enableSourcemap.css) {
-          contents += `\n/*# sourceMappingURL=${EmptySourceMap} */`;
+      onResolve({ filter: /\.css$/ }, (args) => {
+        if (cssMap.has(args.path)) {
+          const data = cssMap.get(args.path)
+          cssMap.delete(args.path)
+          return { path: args.path, pluginData: data }
         }
+      })
 
-        return { contents, loader: "css" };
-      });
+      onLoad({ filter: /\.css$/ }, (args) => {
+        if (args.pluginData) {
+          const { code, map, source } = args.pluginData
+          if (code === undefined) return
+
+          let contents = code
+          if (map) {
+            // Prevent using the same name as js sources
+            map.sources[0] += '?style.css'
+            map.sourcesContent = [source]
+            contents += `\n/*# sourceMappingURL=${toUrl(map)} */`
+          } else if (!enableSourcemap.css) {
+            contents += `\n/*# sourceMappingURL=${EmptySourceMap} */`
+          }
+
+          return { contents, loader: 'css' }
+        }
+      })
     },
-  };
+  }
 }
 
-export default svelte;
+// reference: https://github.com/EMH333/esbuild-svelte
+function convertMessage({ message, start, end }: Warning, filename: string, source: string, sourcemap: any) {
+  let location: Partial<Location> | undefined
+  if (start && end) {
+    let lineText = source.split(/\r\n|\r|\n/g)[start.line - 1]
+    let lineEnd = start.line === end.line ? end.column : lineText.length
+
+    if (sourcemap) {
+      sourcemap = new TraceMap(sourcemap)
+      const pos = originalPositionFor(sourcemap, start)
+      if (pos.source) {
+        start.line = pos.line ?? start.line
+        start.column = pos.column ?? start.column
+      }
+    }
+
+    location = {
+      file: filename,
+      line: start.line,
+      column: start.column,
+      length: lineEnd - start.column,
+      lineText,
+    }
+  }
+  return { text: message, location }
+}
+
+export { svelte as default }

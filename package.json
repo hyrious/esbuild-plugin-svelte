@@ -1,47 +1,50 @@
 {
   "name": "@hyrious/esbuild-plugin-svelte",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "description": "Load .svelte files in esbuild.",
-  "main": "dist/index.js",
+  "keywords": [
+    "esbuild",
+    "svelte"
+  ],
+  "repository": "hyrious/esbuild-plugin-svelte",
+  "license": "MIT",
+  "author": "hyrious <hyrious@outlook.com>",
   "exports": {
     ".": {
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
     "./package.json": "./package.json"
   },
+  "main": "dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
     "src",
     "dist"
   ],
   "scripts": {
-    "build": "npm run build-cjs && npm run build-esm && npm run build-types",
-    "build-cjs": "esbuild src/index.ts --bundle --platform=node --target=node14.18,node16 --format=cjs --outfile=dist/index.js --sourcemap --external:esbuild --external:svelte",
-    "build-esm": "esbuild src/index.ts --bundle --platform=node --target=node14.18,node16 --format=esm --outfile=dist/index.mjs --sourcemap --external:esbuild --external:svelte",
-    "build-types": "dts src/index.ts -o dist/index.d.ts",
+    "build": "esbuild-dev scripts/build.ts",
     "test": "c8 --include=src esbuild-dev --no-warnings --loader src/index.test.ts"
   },
-  "repository": "hyrious/esbuild-plugin-svelte",
-  "keywords": [
-    "esbuild",
-    "svelte"
-  ],
-  "author": "hyrious <hyrious@outlook.com>",
-  "license": "MIT",
-  "peerDependencies": {
-    "esbuild": "*",
-    "svelte": "*"
+  "dependencies": {
+    "@jridgewell/trace-mapping": "^0.3.18"
   },
   "devDependencies": {
     "@hyrious/dts": "^0.1.9",
-    "@hyrious/esbuild-dev": "^0.10.2",
-    "@types/node": "^18.11.9",
-    "c8": "^7.14.0",
-    "esbuild": "^0.17.19",
+    "@hyrious/esbuild-dev": "^0.10.3",
+    "@types/node": "^18.16.19",
+    "c8": "^8.0.0",
+    "esbuild": "^0.18.11",
+    "rollup": "^3.26.1",
     "sourcemap-validator": "^2.1.0",
-    "svelte": "^3.59.1",
-    "uvu": "^0.5.6"
+    "svelte": "^4.0.4",
+    "uvu": "^0.5.6",
+    "yoctocolors": "^1.0.0"
+  },
+  "peerDependencies": {
+    "esbuild": "*",
+    "svelte": "*"
   },
   "engines": {
     "node": "^14.18.0 || >=16.0.0"

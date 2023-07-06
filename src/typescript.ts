@@ -1,73 +1,90 @@
-import { transform, PartialMessage, TransformOptions } from "esbuild";
-import { existsSync } from "fs";
-import { readFile } from "fs/promises";
-import { basename, dirname, resolve } from "path";
-import { PreprocessorGroup } from "svelte/types/compiler/preprocess";
-import { quote, warn as warn_ } from "./utils";
+import type { PartialMessage, PluginBuild, TransformOptions } from 'esbuild'
+import type { PreprocessorGroup } from 'svelte/compiler'
 
-export type CompilerOptions = NonNullable<
-  Exclude<
-    TransformOptions["tsconfigRaw"],
-    string | undefined
-  >["compilerOptions"]
->;
+import { formatMessages, transform, version } from 'esbuild'
+import { existsSync } from 'fs'
+import { readFile } from 'fs/promises'
+import { basename, dirname, resolve } from 'path'
+import { WriteStream } from 'tty'
 
-export interface Options {
-  compilerOptions?: CompilerOptions;
-  onwarn?: (
-    message: PartialMessage,
-    defaultHandler?: (message: PartialMessage) => void
-  ) => void;
+type CompilerOptions = NonNullable<
+  Exclude<TransformOptions['tsconfigRaw'], string | undefined>['compilerOptions']
+>
+
+export interface TypeScriptOptions {
+  compilerOptions?: CompilerOptions
+  esbuild?: PluginBuild['esbuild']
+  onwarn?: (message: PartialMessage, defaultHandler?: (message: PartialMessage) => void) => void
 }
 
-// based on https://github.com/lukeed/svelte-preprocess-esbuild
-export function typescript(options?: Options): PreprocessorGroup {
-  const onwarn = options?.onwarn;
-  const warn = (warning: PartialMessage): void =>
-    onwarn ? onwarn(warning, warn_) : /* c8 ignore next */ void warn_(warning);
+export function typescript(options: TypeScriptOptions = {}): PreprocessorGroup {
+  const onwarn = options.onwarn
+  const warn = onwarn ? (message: PartialMessage) => onwarn(message, defaultHandler) : defaultHandler
+  const compile = options.esbuild?.transform ?? transform
 
   return {
-    async script({
-      attributes: { lang, src },
-      content,
-      filename = "source.svelte",
-    }) {
-      if (lang !== "ts") return;
+    async script({ attributes: { lang, src }, content, filename = 'source.svelte' }) {
+      if (lang !== 'ts') return
 
-      let dependencies: string[] | undefined;
-      let sourcefile = basename(filename);
-      if (typeof src === "string") {
-        const resolved = resolve(dirname(filename), src);
+      let dependencies: string[] | undefined
+      let sourcefile = basename(filename)
+      if (typeof src === 'string') {
+        const resolved = resolve(dirname(filename), src)
         if (existsSync(resolved)) {
-          content = await readFile(resolved, "utf-8");
-          dependencies = [resolved];
-          sourcefile = src;
+          content = await readFile(resolved, 'utf8')
+          dependencies = [resolved]
+          sourcefile = src
         } else {
-          const warning: PartialMessage = {
-            text: `Could not find ${quote(src)} from ${quote(filename)}`,
+          warn({
+            text: `Could not find ${JSON.stringify(src)} from ${JSON.stringify(filename)}`,
             location: { file: filename },
-          };
-          warn(warning);
+          })
         }
       }
 
-      const { code, map, warnings } = await transform(content, {
-        loader: "ts",
+      const { code, map, warnings } = await compile(content, {
+        loader: 'ts',
         sourcefile,
-        sourcemap: "external",
+        sourcemap: 'external',
         tsconfigRaw: {
-          compilerOptions: {
-            preserveValueImports: true,
-            ...options?.compilerOptions,
-          },
+          compilerOptions: Object.assign(
+            defaultCompilerOptions(options.esbuild?.version ?? version),
+            options.compilerOptions,
+          ),
         },
-      });
+      })
 
-      for (const warning of warnings) {
-        warn(warning);
+      for (const w of warnings) {
+        warn(w)
       }
 
-      return { code, map, dependencies };
+      return { code, map, dependencies }
     },
-  };
+  }
+}
+
+function defaultCompilerOptions(version?: string): CompilerOptions {
+  if (version) {
+    const [major, minor] = version.split('.')
+    if (Number(major) === 0 && Number(minor) < 18) {
+      return { preserveValueImports: true }
+    }
+  }
+  return { verbatimModuleSyntax: true }
+}
+
+async function defaultHandler(message: string | PartialMessage | PartialMessage[]) {
+  message = typeof message === 'string' ? [{ text: message }] : makeArray(message)
+  const result = await formatMessages(message, {
+    kind: 'warning',
+    color: WriteStream.prototype.hasColors(),
+    terminalWidth: process.stderr.columns,
+  })
+  for (const string of result) {
+    console.warn(string)
+  }
+}
+
+export function makeArray<T>(a: T | T[]): T[] {
+  return Array.isArray(a) ? a : [a]
 }

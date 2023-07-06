@@ -5,11 +5,11 @@
     "lib": ["ESNext"],
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "strict": true,
-    "isolatedModules": true,
-    "useUnknownInCatchVariables": false
+    "useUnknownInCatchVariables": false,
+    "verbatimModuleSyntax": true
   }
 }
