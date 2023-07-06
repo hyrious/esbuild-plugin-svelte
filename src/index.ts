@@ -120,7 +120,7 @@ export function svelte(options: Options = {}): Plugin {
           }
 
           for (const w of compiled.warnings) {
-            warnings.push(convertMessage(w, args.path, source, sourcemap))
+            warnings.push(convertMessage(w, args.path, code, sourcemap))
           }
 
           return { contents, warnings, watchFiles }
@@ -133,7 +133,7 @@ export function svelte(options: Options = {}): Plugin {
         if (cssMap.has(args.path)) {
           const data = cssMap.get(args.path)
           cssMap.delete(args.path)
-          return { path: args.path, pluginData: data }
+          return { path: data.path, pluginData: data }
         }
       })
 
