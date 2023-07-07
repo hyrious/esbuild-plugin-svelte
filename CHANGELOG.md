@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fixed incorrect line numbers in **errors**.
+
 ## 0.2.0
 
 - Fixed incorrect line numbers in warnings.\

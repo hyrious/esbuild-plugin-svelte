@@ -61,8 +61,8 @@ export function svelte(options: Options = {}): Plugin {
         const source = await readFile(args.path, 'utf8')
         const filename = '.' + sep + relative(root, args.path)
 
+        let code: string | undefined, sourcemap: any
         try {
-          let code: string, sourcemap: any
           let warnings: PartialMessage[] = []
 
           if (options.preprocess !== false) {
@@ -125,7 +125,7 @@ export function svelte(options: Options = {}): Plugin {
 
           return { contents, warnings, watchFiles }
         } catch (err) {
-          return { errors: [convertMessage(err, filename, source, null)] }
+          return { errors: [convertMessage(err, filename, code || source, sourcemap)] }
         }
       })
 
