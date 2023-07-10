@@ -9,6 +9,9 @@ const { outputFiles } = await build({
   write: false,
   external: ['svelte'],
   format: 'esm',
+  define: {
+    'process.env.COUNT': '0',
+  },
 }).catch(() => process.exit(1))
 
 for (const { path, text } of outputFiles) {

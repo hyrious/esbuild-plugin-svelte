@@ -4,7 +4,7 @@ import type { PreprocessorGroup } from 'svelte/compiler'
 import { formatMessages, transform, version } from 'esbuild'
 import { existsSync } from 'fs'
 import { readFile } from 'fs/promises'
-import { basename, dirname, resolve } from 'path'
+import { dirname, normalize, resolve } from 'path'
 import { WriteStream } from 'tty'
 
 type CompilerOptions = NonNullable<
@@ -27,13 +27,12 @@ export function typescript(options: TypeScriptOptions = {}): PreprocessorGroup {
       if (lang !== 'ts') return
 
       let dependencies: string[] | undefined
-      let sourcefile = basename(filename)
       if (typeof src === 'string') {
         const resolved = resolve(dirname(filename), src)
         if (existsSync(resolved)) {
           content = await readFile(resolved, 'utf8')
           dependencies = [resolved]
-          sourcefile = src
+          filename = resolved
         } else {
           warn({
             text: `Could not find ${JSON.stringify(src)} from ${JSON.stringify(filename)}`,
@@ -44,7 +43,8 @@ export function typescript(options: TypeScriptOptions = {}): PreprocessorGroup {
 
       const { code, map, warnings } = await compile(content, {
         loader: 'ts',
-        sourcefile,
+        charset: 'utf8',
+        sourcefile: normalize(filename),
         sourcemap: 'external',
         tsconfigRaw: {
           compilerOptions: Object.assign(
@@ -67,7 +67,7 @@ function defaultCompilerOptions(version?: string): CompilerOptions {
   if (version) {
     const [major, minor] = version.split('.')
     if (Number(major) === 0 && Number(minor) < 18) {
-      return { preserveValueImports: true }
+      return { importsNotUsedAsValues: 'preserve', preserveValueImports: true }
     }
   }
   return { verbatimModuleSyntax: true }
