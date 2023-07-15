@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- Fixed sourcemap "sources" field.
+
 ## 0.2.1
 
 - Fixed incorrect line numbers in **errors**.
