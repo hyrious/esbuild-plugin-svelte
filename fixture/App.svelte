@@ -7,7 +7,7 @@
 
 
 
-  let count = Number(process.env.COUNT); count == -0 // line 10
+  let count = $state(Number(process.env.COUNT)); count == -0 // line 10
 </script>
 
 <h1>Hello 🏗 world!</h1>

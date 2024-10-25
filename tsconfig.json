@@ -1,15 +1,8 @@
 {
   "include": ["src"],
+  "extends": "@hyrious/configs/tsconfig.casual.json",
   "compilerOptions": {
-    "noEmit": true,
-    "lib": ["ESNext"],
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "strict": true,
-    "useUnknownInCatchVariables": false,
-    "verbatimModuleSyntax": true
+    "types": ["node"],
+    "verbatimModuleSyntax": false
   }
 }

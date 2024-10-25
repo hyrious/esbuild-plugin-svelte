@@ -8,7 +8,9 @@ Minimal efforts to make svelte work in esbuild.
 $ npm add -D @hyrious/esbuild-plugin-svelte svelte esbuild
 ```
 
-> **Note:** esbuild and svelte are peer dependencies!
+> [!NOTE]
+>
+> `esbuild` and `svelte` are peer dependencies!
 
 ## Usage
 
@@ -16,55 +18,83 @@ $ npm add -D @hyrious/esbuild-plugin-svelte svelte esbuild
 import { build } from 'esbuild'
 import { svelte } from '@hyrious/esbuild-plugin-svelte'
 
-build({
+await build({
   entryPoints: ['main.js'],
   bundle: true,
   plugins: [svelte()],
-})
+}).catch(() => process.exit(1))
 ```
 
-### Options
+## Options
 
 ```js
-import { typescript } from "@hyrious/esbuild-plugin-svelte";
-
 svelte({
-  filter: /\.svelte$/;
-  preprocess: typescript();
-  emitCss: false;
-  compilerOptions: {};
-});
+  filter: /\.svelte(\?.*)?$/,
+  compilerOptions: {},
+  preprocess: [],
+  emitCss: true,
+  inspector: undefined,
+  dynamicCompileOptions: () => void 0,
+})
 ```
 
 ### filter
 
-The regexp passed to [`onLoad()`](https://esbuild.github.io/plugins/#load-callbacks).
-
-### preprocess
-
-If set, it will run `svelte.preprocess(source, processors)` before `svelte.compile()`.
-
-By default it will enable the `typescript()` preprocessor which uses esbuild to transform `<script lang="ts">` blocks.
-If you want to totally turn off preprocessing, set this option to `false`.
-
-### emitCss
-
-Whether to emit `<style>` parts of your svelte components to a .css file.
-It is implemented by appending an `import "path/to/component.svelte.css"`
-statement to the end of the compiled js code.
-
-If you set this to `true`, it will add these default config to compiler options:
-
-```js
-{
-  css: "external",
-  enableSourcemap: { js: true, css: false },
-}
-```
+Passed to esbuild [`onLoad()`](https://esbuild.github.io/plugins/#on-load)
+callback to match svelte files.
 
 ### compilerOptions
 
-See [`svelte.compile`](https://svelte.dev/docs/svelte-compiler#types-compileoptions).
+See [svelte/compiler#CompileOptions](https://svelte.dev/docs/svelte/svelte-compiler#CompileOptions).
+
+If not specified, the `dev` mode is detected with the following logic:
+
+- If either one of the following config is set, `dev: false`.
+  - `minify: true`
+  - `define: { 'process.env.NODE_ENV': '"production"' }`
+  - `define: { 'import.meta.env.NODE_ENV': '"production"' }`
+  - `define: { 'import.meta.env.DEV': 'false' }`
+- Otherwise, `dev: true`.
+
+The `generate: 'server'` mode is set if `define['import.meta.env.SSR'] == 'true'`.
+
+### preprocess
+
+See [svelte/compiler#Preprocessor](https://svelte.dev/docs/svelte/svelte-compiler#Preprocessor).
+
+You can opt-in the esbuild-powered TypeScript preprocessor by:
+
+```js
+import { svelte, typescript } from '@hyrious/esbuild-plugin-svelte'
+
+svelte({
+  // esbuild will print warnings on the final js, so suppress them here.
+  preprocess: [typescript({ onwarn: false })],
+})
+```
+
+### emitCss
+
+Generate virtual CSS files. If `true` (by default), it will set svelte compile
+options `css: 'external'` automatically.
+
+### inspector
+
+Enable svelte inspector during development (i.e. the
+[`minify`](https://esbuild.github.io/api/#minify) option is not set to `true`).
+You can set it to `false` to ensure it is not enabled anyway.
+
+### dynamicCompileOptions
+
+A function to update [`compilerOptions`](#compileroptions) before compilation.
+
+```js
+svelte({
+  dynamicCompileOptions({ filename }) {
+    if (filename.includes('node_modules')) return { runes: false }
+  },
+})
+```
 
 ## Credits
 
