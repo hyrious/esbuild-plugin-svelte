@@ -1,7 +1,7 @@
 {
   "name": "@hyrious/esbuild-plugin-svelte",
   "type": "module",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Load .svelte files in esbuild.",
   "author": "hyrious <hyrious@outlook.com>",
   "license": "MIT",
