@@ -33,6 +33,7 @@
   "devDependencies": {
     "@hyrious/configs": "^0.1.3",
     "@hyrious/dts": "^0.2.10",
+    "@hyrious/esbuild-dev": "^0.10.11",
     "@types/node": "^22.8.1",
     "esbuild": "^0.24.0",
     "prettier": "^3.3.3",
