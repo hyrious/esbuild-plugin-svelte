@@ -21,6 +21,6 @@ jobs:
           npm ci
           npm run build
       - run: npm test
-      - run: npm test --dev
-      - run: npm test --ssr
-      - run: npm test --dev --ssr
+      - run: npm test -- --dev
+      - run: npm test -- --ssr
+      - run: npm test -- --dev --ssr
