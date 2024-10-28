@@ -8,7 +8,7 @@
     - Does not support `<script lang="ts" src="external-file.ts">` any more.
       You should use `.svelte.ts` files and import them directly.
     - Does not apply by default because Svelte 5 has builtin TypeScript preprocessor.
-  - TODO...
+  - Added `dynamicCompileOptions` option.
 
 ## 0.2.3
 
