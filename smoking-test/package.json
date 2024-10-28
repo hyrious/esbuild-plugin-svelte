@@ -1,0 +1,7 @@
+{
+  "name": "smoking-test",
+  "private": true,
+  "scripts": {
+    "test": "esbuild-dev serve.ts"
+  }
+}

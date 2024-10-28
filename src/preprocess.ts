@@ -26,8 +26,6 @@ export interface TypeScriptOptions {
 export function typescript(options: TypeScriptOptions = {}): PreprocessorGroup {
   options.onwarn ??= true
 
-  // Reference:
-  // https://github.com/sveltejs/vite-plugin-svelte/blob/main/packages/vite-plugin-svelte/src/preprocess.js
   return {
     async script({ attributes, content, filename = '' }) {
       if (attributes.lang != 'ts') return

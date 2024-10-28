@@ -77,12 +77,10 @@ svelte({
 Generate virtual CSS files. If `true` (by default), it will set svelte compile
 options `css: 'external'` automatically.
 
-<!--
 ### inspector
 
-Enable svelte inspector during development (i.e. the
-[`minify`](https://esbuild.github.io/api/#minify) option is not set to `true`).
-You can set it to `false` to ensure it is not enabled anyway. -->
+Enable svelte inspector during development (see the `dev` logic above).
+You can set it to `false` to ensure it is not enabled anyway.
 
 ### dynamicCompileOptions
 

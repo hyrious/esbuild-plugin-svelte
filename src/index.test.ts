@@ -9,7 +9,12 @@ const { outputFiles } = await build({
   bundle: true,
   format: 'esm',
   charset: 'utf8',
-  plugins: [svelte({ preprocess: typescript({ onwarn: false }) })],
+  plugins: [
+    svelte({
+      preprocess: typescript({ onwarn: false }),
+      inspector: false,
+    }),
+  ],
   outdir: '.',
   write: false,
   packages: 'external',

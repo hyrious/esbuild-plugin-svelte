@@ -1,6 +1,7 @@
 import { OnLoadArgs, PartialMessage, Plugin, PluginBuild } from 'esbuild'
 import { readFile } from 'node:fs/promises'
 import { basename, relative } from 'node:path'
+import { createServer, RequestListener } from 'node:http'
 import {
   preprocess,
   compile,
@@ -8,8 +9,11 @@ import {
   PreprocessorGroup,
   CompileOptions,
   Warning,
+  ModuleCompileOptions,
 } from 'svelte/compiler'
 import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping'
+import { Options } from '../node_modules/@sveltejs/vite-plugin-svelte-inspector/src/public'
+import { defaultInspectorOptions, inspector, loader } from './inspector'
 
 export interface SvelteOptions {
   /// Passed to esbuild to filter in svelte files.
@@ -21,8 +25,8 @@ export interface SvelteOptions {
   preprocess?: PreprocessorGroup | PreprocessorGroup[]
   /// If `true` (by default), emit `import 'component.svelte.css'` at the end of the file.
   emitCss?: boolean
-  // Enable svelte inspector during development.
-  // inspector?: boolean
+  /// Enable svelte inspector during development.
+  inspector?: boolean | Options
   /// Alter svelte compile options for each file. Returns the partial options you want to change.
   dynamicCompileOptions?: (data: {
     filename: string
@@ -40,17 +44,60 @@ export function svelte(options: SvelteOptions = {}): Plugin {
   const filter = (options.filter ??= /\.svelte(\?.*)?$/)
   const compilerOptions = (options.compilerOptions ??= {})
 
+  const inspectorOptions: false | Options =
+    (options.inspector ??= true) === false
+      ? false
+      : options.inspector === true
+        ? defaultInspectorOptions
+        : { ...defaultInspectorOptions, ...options.inspector }
+  let waitLaunchEditorService = Promise.resolve()
+
   if (emitCss) compilerOptions.css ??= 'external'
 
   return {
     name: 'svelte',
     setup(build) {
       const root = process.cwd()
+      let injectInspector = false
 
       compilerOptions.dev ??= isInDevMode(build)
       compilerOptions.generate ??= isInSsrMode(build) ? 'server' : 'client'
 
       build.onEnd(() => cssCache.clear())
+
+      if (compilerOptions.dev && compilerOptions.generate === 'client' && inspectorOptions) {
+        injectInspector = true
+        build.onDispose(setupLaunchEditorService())
+        build.initialOptions.conditions ??= ['development']
+
+        build.onResolve({ filter: /^virtual:svelte-inspector-path:.*/ }, (args) => {
+          const filename = args.path.replace('virtual:svelte-inspector-path:', '')
+          return { path: filename, namespace: 'svelte-inspector' }
+        })
+
+        build.onResolve({ filter: /^virtual:svelte-inspector-options$/ }, () => {
+          return { path: 'options.js', namespace: 'svelte-inspector' }
+        })
+
+        build.onLoad({ filter: /.*/, namespace: 'svelte-inspector' }, async (args) => {
+          if (args.path == 'options.js') {
+            await waitLaunchEditorService
+            return { contents: JSON.stringify(inspectorOptions), loader: 'json' }
+          }
+          if (args.path == 'load-inspector.js') {
+            return { contents: loader, loader: 'default', resolveDir: root }
+          }
+          if (args.path == 'Inspector.svelte') {
+            const compiled = compile(inspector, {
+              dev: true,
+              generate: 'client',
+              css: 'injected',
+              filename: args.path,
+            })
+            return { contents: makeCode(compiled.js), loader: 'js', resolveDir: root }
+          }
+        })
+      }
 
       build.onLoad({ filter }, async (args) => {
         const filename = relative(root, args.path).replaceAll('\\', '/')
@@ -60,6 +107,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
           const css = cssCache.get(args.path)
           cssCache.delete(args.path)
           if (css) return { contents: css, loader: 'css' }
+          else return { errors: [{ text: 'CSS not found' }] }
         }
 
         const source = await readFile(args.path, 'utf8')
@@ -77,17 +125,14 @@ export function svelte(options: SvelteOptions = {}): Plugin {
             code = source
           }
 
+          const compileOptions = { ...compilerOptions }
           if (options.dynamicCompileOptions) {
-            const changes = options.dynamicCompileOptions({
-              filename,
-              code,
-              compileOptions: compilerOptions,
-            })
-            if (changes) Object.assign(compilerOptions, changes)
+            const changes = options.dynamicCompileOptions({ filename, code, compileOptions })
+            if (changes) Object.assign(compileOptions, changes)
           }
 
           const compiled = compile(code, {
-            ...compilerOptions,
+            ...compileOptions,
             filename,
             sourcemap,
           })
@@ -111,7 +156,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
           compiled.js.map.sourcesContent = sourcesContent
 
           return {
-            contents: makeCode(compiled.js),
+            contents: makeCode(compiled.js, injectInspector),
             warnings: convertMessages(compiled.warnings, code, sourcemap),
             watchFiles,
           }
@@ -120,14 +165,16 @@ export function svelte(options: SvelteOptions = {}): Plugin {
         }
       })
 
-      build.onLoad({ filter: /\.svelte\.[cj]s(\?.*)?$/ }, async (args) => {
+      build.onLoad({ filter: /\.svelte\.[jt]s(\?.*)?$/ }, async (args) => {
         const filename = relative(root, args.path).replaceAll('\\', '/')
 
         const code = await readFile(args.path, 'utf8')
 
         try {
+          const compileOptions = getModuleCompileOptions(compilerOptions)
+
           const compiled = compileModule(code, {
-            ...compilerOptions,
+            ...compileOptions,
             filename,
           })
 
@@ -170,6 +217,15 @@ export function svelte(options: SvelteOptions = {}): Plugin {
     })
   }
 
+  function getModuleCompileOptions({
+    dev,
+    generate,
+    filename,
+    rootDir,
+  }: CompileOptions): ModuleCompileOptions {
+    return { dev, generate, filename, rootDir }
+  }
+
   function isInSsrMode(build: PluginBuild): boolean {
     const { define = {} } = build.initialOptions
     return define['import.meta.env.SSR'] == 'true'
@@ -201,9 +257,38 @@ export function svelte(options: SvelteOptions = {}): Plugin {
     return css.code + `\n/*# sourceMappingURL=${css.map.toUrl()} */\n`
   }
 
-  function makeCode(js: { code: string; map: { toUrl(): string } } | null): string {
+  function makeCode(
+    js: { code: string; map: { toUrl(): string } } | null,
+    injectInspector?: boolean,
+  ): string {
     if (!js) return ''
-    return js.code + `\n//# sourceMappingURL=${js.map.toUrl()}`
+    const injected = injectInspector ? `\nimport('virtual:svelte-inspector-path:load-inspector.js')` : ''
+    return js.code + `${injected}\n//# sourceMappingURL=${js.map.toUrl()}\n`
+  }
+
+  function setupLaunchEditorService(): () => void {
+    let dispose = () => void 0
+    waitLaunchEditorService = new Promise((resolve) => {
+      import('launch-editor-middleware').then((mod) => {
+        const handler: RequestListener = mod.default()
+        const server = createServer(cors(handler))
+        server.listen(0, 'localhost', () => {
+          const { port } = server.address() as any
+          Object.assign(inspectorOptions, { __internal: { base: `http://localhost:${port}` } })
+          resolve()
+        })
+        server.on('error', (err) => console.error(err))
+        dispose = () => void server.close()
+      })
+    })
+    return () => waitLaunchEditorService.then(dispose)
+  }
+
+  function cors(handler: RequestListener): RequestListener {
+    return (req, res) => {
+      res.setHeader('access-control-allow-origin', '*')
+      return handler(req, res)
+    }
   }
 }
 

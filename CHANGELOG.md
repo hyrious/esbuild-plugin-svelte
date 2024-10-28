@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- Added `inspector` option.
+- Fixed `*.svelte.ts` files was not matched correctly.
+
 ## 0.3.0
 
 - Support Svelte 5. Main changes:
