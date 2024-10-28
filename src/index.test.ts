@@ -1,54 +1,39 @@
-import { suite } from 'uvu'
-import * as assert from 'uvu/assert'
-import validate from 'sourcemap-validator'
-import { typescript, type TypeScriptOptions } from './typescript'
-import { readFile } from 'fs/promises'
-import { compile, preprocess } from 'svelte/compiler'
-import { basename } from 'path'
+import { build } from 'esbuild'
+import { svelte, typescript } from './index'
 
-const ts = suite('typescript')
+const dev = process.argv.includes('--dev')
+const ssr = process.argv.includes('--ssr')
 
-const compile_file = async (filename: string, options?: TypeScriptOptions) => {
-  const source = await readFile(filename, 'utf-8')
-  const processor = typescript(options)
-  const processed = await preprocess(source, processor, { filename })
-  const { js } = compile(processed.code, {
-    sourcemap: processed.map,
-    filename,
-    dev: true,
-  })
-  assert.equal(js.map.sources, [basename(filename)])
-  js.map.sources[0] = filename
-  assert.not.throws(() => {
-    validate(js.code, js.map, { [filename]: source })
-  })
+const { outputFiles } = await build({
+  entryPoints: ['./fixture/App.svelte'],
+  bundle: true,
+  format: 'esm',
+  charset: 'utf8',
+  plugins: [svelte({ preprocess: typescript({ onwarn: false }) })],
+  outdir: '.',
+  write: false,
+  packages: 'external',
+  sourcemap: true,
+  define: {
+    'process.env.COUNT': '0',
+    'process.env.NODE_ENV': dev ? '"development"' : '"production"',
+    'import.meta.env.SSR': ssr ? 'true' : 'false',
+  },
+}).catch(() => process.exit(1))
+
+let code!: string, map!: string
+for (const { path, text } of outputFiles) {
+  if (path.endsWith('.js')) code = text
+  if (path.endsWith('.js.map')) map = text
 }
 
-ts('should generate correct sourcemap', async () => {
-  await compile_file('./test/example.svelte')
-})
+console.log(code)
+console.log(map)
 
-ts('should work with `src`', async () => {
-  const filename = './test/src-nested.svelte'
-  await compile_file(filename, {
-    onwarn(message) {
-      assert.match(message.text!, 'Comparison with -0 using the')
-    },
-  })
-})
+const _16to8 = (x: string) => unescape(encodeURIComponent(x))
+;[code, map] = [_16to8(code), _16to8(map)]
 
-ts('should yell at not founding `src`', async () => {
-  const filename = './test/src-not-found.svelte'
-  await compile_file(filename, {
-    onwarn(message) {
-      assert.is(message.location?.file, filename)
-    },
-  })
-})
-
-ts('should not process scripts without `lang=ts`', async () => {
-  const filename = './test/not-ts.svelte'
-  await compile_file(filename)
-})
-
-ts.run()
+console.log(
+  'https://evanw.github.io/source-map-visualization/#' +
+    btoa(code.length + '\0' + code + map.length + '\0' + map).replace(/\=+$/, ''),
+)

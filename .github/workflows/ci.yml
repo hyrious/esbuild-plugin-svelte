@@ -4,10 +4,13 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
+      group: ${{ github.workflow }}-${{ github.ref }}-${{ matrix.os }}
       cancel-in-progress: true
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,4 +20,7 @@ jobs:
       - run: |
           npm ci
           npm run build
-          npm test
+      - run: npm test
+      - run: npm test -- --dev
+      - run: npm test -- --ssr
+      - run: npm test -- --dev --ssr

@@ -4,6 +4,5 @@
   "quoteProps": "consistent",
   "singleQuote": true,
   "semi": false,
-  "trailingComma": "all",
-  "htmlWhitespaceSensitivity": "ignore"
+  "trailingComma": "all"
 }

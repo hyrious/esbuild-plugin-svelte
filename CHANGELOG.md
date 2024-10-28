@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0
+
+- Support Svelte 5. Main changes:
+  - The preprocessor `typescript()` &hellip;
+    - Removes the `esbuild` option.
+    - Does not support `<script lang="ts" src="external-file.ts">` any more.
+      You should use `.svelte.ts` files and import them directly.
+    - Does not apply by default because Svelte 5 has builtin TypeScript preprocessor.
+  - TODO...
+
+## 0.2.3
+
+- Lock peer dependency `svelte`'s version to &le;4.
+
 ## 0.2.2
 
 - Fixed sourcemap "sources" field.
