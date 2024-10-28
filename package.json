@@ -20,7 +20,8 @@
     "node": ">=20.18.0"
   },
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --packages=external --outdir=dist && dts -p"
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --packages=external --outdir=dist && dts -p",
+    "test": "esbuild-dev src/index.test.ts"
   },
   "peerDependencies": {
     "esbuild": ">=0.18",

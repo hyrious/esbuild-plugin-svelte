@@ -107,7 +107,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
               sourcesContent.push(null)
             }
           }
-          // @ts-expect-error Svelte uses `string[]` here, but actually it can have `null` items.
+          // @ts-ignore Svelte uses `string[]` here, but actually it can have `null` items.
           compiled.js.map.sourcesContent = sourcesContent
 
           return {

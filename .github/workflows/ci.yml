@@ -6,7 +6,7 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
+      group: ${{ github.workflow }}-${{ github.ref }}-${{ matrix.os }}
       cancel-in-progress: true
     strategy:
       matrix:
@@ -20,4 +20,7 @@ jobs:
       - run: |
           npm ci
           npm run build
-          npm test
+      - run: npm test
+      - run: npm test --dev
+      - run: npm test --ssr
+      - run: npm test --dev --ssr
