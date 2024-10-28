@@ -21,8 +21,8 @@ export interface SvelteOptions {
   preprocess?: PreprocessorGroup | PreprocessorGroup[]
   /// If `true` (by default), emit `import 'component.svelte.css'` at the end of the file.
   emitCss?: boolean
-  /// Enable svelte inspector during development.
-  inspector?: boolean
+  // Enable svelte inspector during development.
+  // inspector?: boolean
   /// Alter svelte compile options for each file. Returns the partial options you want to change.
   dynamicCompileOptions?: (data: {
     filename: string
