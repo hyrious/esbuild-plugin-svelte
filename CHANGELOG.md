@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+- Fix: move `launch-editor-middleware` to dependencies.
+
 ## 0.3.1
 
 - Added `inspector` option.

@@ -1,4 +1,5 @@
 import { build } from 'esbuild'
+import { external } from '@hyrious/esbuild-plugin-external'
 import raw from './esbuild-plugin-raw'
 
 await build({
@@ -7,7 +8,6 @@ await build({
   format: 'esm',
   platform: 'node',
   outdir: 'dist',
-  packages: 'external',
   logLevel: 'info',
-  plugins: [raw],
+  plugins: [raw, external()],
 }).catch(() => process.exit(1))
