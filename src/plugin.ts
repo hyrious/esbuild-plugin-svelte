@@ -1,7 +1,7 @@
 import { OnLoadArgs, PartialMessage, Plugin, PluginBuild } from 'esbuild'
 import { readFile } from 'node:fs/promises'
 import { basename, relative } from 'node:path'
-import { createServer, RequestListener } from 'node:http'
+import { createServer, RequestListener, Server } from 'node:http'
 import {
   preprocess,
   compile,
@@ -50,7 +50,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
       : options.inspector === true
         ? defaultInspectorOptions
         : { ...defaultInspectorOptions, ...options.inspector }
-  let waitLaunchEditorService = Promise.resolve()
+  let waitLaunchEditorService = Promise.resolve<Server | null>(null)
 
   if (emitCss) compilerOptions.css ??= 'external'
 
@@ -269,7 +269,6 @@ export function svelte(options: SvelteOptions = {}): Plugin {
   }
 
   function setupLaunchEditorService(): () => void {
-    let dispose = () => void 0
     waitLaunchEditorService = new Promise((resolve) => {
       import('launch-editor-middleware').then((mod) => {
         const handler: RequestListener = mod.default()
@@ -277,13 +276,12 @@ export function svelte(options: SvelteOptions = {}): Plugin {
         server.listen(0, 'localhost', () => {
           const { port } = server.address() as any
           Object.assign(inspectorOptions, { __internal: { base: `http://localhost:${port}` } })
-          resolve()
+          resolve(server)
         })
         server.on('error', (err) => console.error(err))
-        dispose = () => void server.close()
       })
     })
-    return () => waitLaunchEditorService.then(dispose)
+    return () => waitLaunchEditorService.then(server => server?.close())
   }
 
   function cors(handler: RequestListener): RequestListener {
