@@ -19,13 +19,12 @@ await ctx.serve({
 
 process.on('SIGINT', async () => {
   await ctx.dispose()
-  process.exit(0)
 })
 
 process.stdin.setEncoding('utf8')
 process.stdin.on('data', async (data: string) => {
   if (data.trim() == 'q') {
     await ctx.dispose()
-    process.exit(0)
+    process.stdin.pause()
   }
 })

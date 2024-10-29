@@ -8,7 +8,7 @@ const { default: App } = await importFile('./App.svelte', {
   plugins: [svelte()],
   define: {
     // For dev-ssr build, because svelte now depends on `esm-env` to choose the env,
-    // the executor (node) should use [`--conditions=development`][1] to correctly run the dev component.
+    // the executor (node) should use [`-C development`][1] to correctly run the dev component.
     // [1]: https://nodejs.org/api/packages.html#resolving-user-conditions
     'import.meta.env.DEV': dev ? 'true' : 'false',
     'import.meta.env.SSR': 'true'
