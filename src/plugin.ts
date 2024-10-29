@@ -127,7 +127,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
 
           const compileOptions = { ...compilerOptions }
           if (options.dynamicCompileOptions) {
-            const changes = options.dynamicCompileOptions({ filename, code, compileOptions })
+            const changes = await options.dynamicCompileOptions({ filename, code, compileOptions })
             if (changes) Object.assign(compileOptions, changes)
           }
 
