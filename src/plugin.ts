@@ -262,6 +262,8 @@ export function svelte(options: SvelteOptions = {}): Plugin {
     injectInspector?: boolean,
   ): string {
     if (!js) return ''
+    // The inspector loader is injected to all JS results returned from this plugin.
+    // It should be ok since they are importing the same module, hence the module cache works.
     const injected = injectInspector ? `\nimport('virtual:svelte-inspector-path:load-inspector.js')` : ''
     return js.code + `${injected}\n//# sourceMappingURL=${js.map.toUrl()}\n`
   }

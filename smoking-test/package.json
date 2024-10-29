@@ -2,6 +2,8 @@
   "name": "smoking-test",
   "private": true,
   "scripts": {
-    "test": "esbuild-dev serve.ts"
+    "test": "esbuild-dev serve.ts",
+    "test:ssr": "esbuild-dev ssr.ts",
+    "test:ssr-dev": "esbuild-dev --node:--conditions=development ssr.ts --dev"
   }
 }
