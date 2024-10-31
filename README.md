@@ -137,21 +137,32 @@ declare global {
 }
 ```
 
+In watch mode, this plugin should also work. However, to reduce the compilation
+time in the short period of 2 builds between `watch` and `serve`. This plugin
+caches the compilation result for 1 second. i.e. The same request to `outfile`
+will get the same result quickly if the last build was done during the last 1 second.
+
 ### Options
 
 ```js
 svelteSSR({
-  template: 'index.html',
+  outfile: 'index.html',
   entryPoint: 'App.svelte',
-  renderHTML: ({ head, body }) => '',
+  render: ({ head, body }) => '',
 })
 ```
 
-### template
+### outfile
 
-The HTML filename to produce. It does not have to exist on the file system.
-It's just for teaching esbuild to output a file. The filename must ends with `.html`.
+The filename to produce. It does not have to exist on the file system.
+It's just for teaching esbuild to output a file.
 If not provided, it defaults to `"index.html"`.
+
+> [!NOTE]
+> Do not include your output dir in the `outfile` option.
+>
+> - `"dist/index.html"` ❌
+> - `"index.html"` ✅
 
 ### entryPoint
 
@@ -161,14 +172,14 @@ If not provided, it will search for the following files in order:
 - `"App.svelte"`
 - `"src/App.svelte"`
 
-### renderHTML
+### render
 
-A function to render the SSR result of the `entryPoint` into `template`.
-The result will be returned to esbuild as the contents of the `template` file.
+A function to render the SSR result of the `entryPoint` into `outfile`.
+The result will be returned to esbuild as the contents of the `outfile` file.
 
 ```js
-// Example renderHTML() implementation
-async function renderHTML({ head, body }) {
+// Example render() implementation
+async function render({ head, body }) {
   let html = await readFile('index.html', 'utf8')
   if (head) html = html.replace('</head>', head + '\n</head>')
   if (body) html = html.replace('id="app">', 'id="app">' + body)
