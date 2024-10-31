@@ -291,5 +291,3 @@ export function svelte(options: SvelteOptions = {}): Plugin {
     }
   }
 }
-
-export { svelte as default }

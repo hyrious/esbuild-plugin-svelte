@@ -24,8 +24,14 @@
     "test": "esbuild-dev -p:./esbuild-plugin-raw src/index.test.ts"
   },
   "peerDependencies": {
+    "@hyrious/esbuild-dev": ">=0.10.3",
     "esbuild": ">=0.18",
     "svelte": ">=5"
+  },
+  "peerDependenciesMeta": {
+    "@hyrious/esbuild-dev": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@jridgewell/trace-mapping": "^0.3.25",

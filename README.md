@@ -5,12 +5,8 @@ Minimal efforts to make svelte work in esbuild.
 ## Install
 
 ```bash
-$ npm add -D @hyrious/esbuild-plugin-svelte svelte esbuild
+npm add -D @hyrious/esbuild-plugin-svelte svelte esbuild
 ```
-
-> [!NOTE]
->
-> `esbuild` and `svelte` are peer dependencies!
 
 ## Usage
 
@@ -33,6 +29,7 @@ svelte({
   compilerOptions: {},
   preprocess: [],
   emitCss: true,
+  inspector: void 0,
   dynamicCompileOptions: () => void 0,
 })
 ```
@@ -92,6 +89,91 @@ svelte({
     if (filename.includes('node_modules')) return { runes: false }
   },
 })
+```
+
+## Experimental
+
+It also provides an <abbr title="Server-Side Rendering">SSR</abbr> plugin which
+renders App.svelte on the server side and bakes it into the HTML template.
+
+> [!IMPORTANT]
+> The API may change without bumping the major version.
+
+To use it, you need to install an additional peer dependency first:
+
+```bash
+npm add -D @hyrious/esbuild-dev
+```
+
+```js
+import { build } from 'esbuild'
+import { svelteSSR } from '@hyrious/esbuild-plugin-svelte'
+
+await build({
+  entryPoints: ['main.js'],
+  bundle: true,
+  plugins: [svelteSSR()],
+}).catch(() => process.exit(1))
+```
+
+Also make sure to update your `main.js` to use `hydrate()` instead of `mount()`.
+
+```js
+// main.js
+import { hydrate } from 'svelte'
+import App from './App.svelte'
+
+hydrate(App, { target: document.getElementById('app') })
+```
+
+This plugin will add `define['import.meta.env.SSR'] = 'true'` if it is not set.
+You can add such TypeScript definition in your project to get code completions:
+
+```ts
+declare global {
+  interface ImportMeta {
+    readonly env: { readonly SSR: boolean }
+  }
+}
+```
+
+### Options
+
+```js
+svelteSSR({
+  template: 'index.html',
+  entryPoint: 'App.svelte',
+  renderHTML: ({ head, body }) => '',
+})
+```
+
+### template
+
+The HTML filename to produce. It does not have to exist on the file system.
+It's just for teaching esbuild to output a file. The filename must ends with `.html`.
+If not provided, it defaults to `"index.html"`.
+
+### entryPoint
+
+The entry component to be executed on the server side.
+If not provided, it will search for the following files in order:
+
+- `"App.svelte"`
+- `"src/App.svelte"`
+
+### renderHTML
+
+A function to render the SSR result of the `entryPoint` into `template`.
+The result will be returned to esbuild as the contents of the `template` file.
+
+```js
+// Example renderHTML() implementation
+async function renderHTML({ head, body }) {
+  let html = await readFile('index.html', 'utf8')
+  if (head) html = html.replace('</head>', head + '\n</head>')
+  if (body) html = html.replace('id="app">', 'id="app">' + body)
+  return html
+}
 ```
 
 ## Credits
