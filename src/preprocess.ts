@@ -16,13 +16,11 @@ export interface TypeScriptOptions {
   onwarn?: boolean | ((message: PartialMessage, defaultHandler?: (message: PartialMessage) => void) => void)
 }
 
-/**
- * Use `esbuild` to preprocess `<script lang="ts">` blocks.
- *
- * ```js
- * svelte({ preprocess: [typescript()] })
- * ```
- */
+/// Use `esbuild` to preprocess `<script lang="ts">` blocks.
+///
+/// ```js
+/// svelte({ preprocess: [typescript()] })
+/// ```
 export function typescript(options: TypeScriptOptions = {}): PreprocessorGroup {
   options.onwarn ??= true
 

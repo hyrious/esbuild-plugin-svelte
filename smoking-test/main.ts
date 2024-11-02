@@ -1,4 +1,4 @@
-import { mount } from 'svelte'
+import { hydrate } from 'svelte'
 import App from './App.svelte'
 
-mount(App, { target: document.getElementById('app')! })
+hydrate(App, { target: document.getElementById('app')! })

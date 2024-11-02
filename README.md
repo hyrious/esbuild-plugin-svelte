@@ -5,12 +5,8 @@ Minimal efforts to make svelte work in esbuild.
 ## Install
 
 ```bash
-$ npm add -D @hyrious/esbuild-plugin-svelte svelte esbuild
+npm add -D @hyrious/esbuild-plugin-svelte svelte esbuild
 ```
-
-> [!NOTE]
->
-> `esbuild` and `svelte` are peer dependencies!
 
 ## Usage
 
@@ -33,6 +29,7 @@ svelte({
   compilerOptions: {},
   preprocess: [],
   emitCss: true,
+  inspector: void 0,
   dynamicCompileOptions: () => void 0,
 })
 ```

@@ -281,7 +281,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
         server.on('error', (err) => console.error(err))
       })
     })
-    return () => waitLaunchEditorService.then(server => server?.close())
+    return () => waitLaunchEditorService.then((server) => server?.close())
   }
 
   function cors(handler: RequestListener): RequestListener {
@@ -291,5 +291,3 @@ export function svelte(options: SvelteOptions = {}): Plugin {
     }
   }
 }
-
-export { svelte as default }
