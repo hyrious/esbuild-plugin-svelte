@@ -222,8 +222,9 @@ export function svelte(options: SvelteOptions = {}): Plugin {
     generate,
     filename,
     rootDir,
+    warningFilter,
   }: CompileOptions): ModuleCompileOptions {
-    return { dev, generate, filename, rootDir }
+    return { dev, generate, filename, rootDir, warningFilter }
   }
 
   function isInSsrMode(build: PluginBuild): boolean {
