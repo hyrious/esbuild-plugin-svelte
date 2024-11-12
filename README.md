@@ -52,7 +52,11 @@ If not specified, the `dev` mode is detected with the following logic:
   - `define: { 'import.meta.env.DEV': 'false' }`
 - Otherwise, `dev: true`.
 
-The `generate: 'server'` mode is set if `define['import.meta.env.SSR'] == 'true'`.
+If not specified, the `ssr` mode (`generate: 'server'`) is detected with the following logic:
+
+- If either one of the following config is set, `generate: 'server'`.
+  - `define: { 'import.meta.env.SSR': 'true' }`
+- Otherwise, `generate: 'client'`.
 
 ### preprocess
 

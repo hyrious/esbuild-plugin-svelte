@@ -51,6 +51,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
         ? defaultInspectorOptions
         : { ...defaultInspectorOptions, ...options.inspector }
   let waitLaunchEditorService = Promise.resolve<Server | null>(null)
+  let onDispose = true
 
   if (emitCss) compilerOptions.css ??= 'external'
 
@@ -67,7 +68,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
 
       if (compilerOptions.dev && compilerOptions.generate === 'client' && inspectorOptions) {
         injectInspector = true
-        build.onDispose(setupLaunchEditorService())
+        onDispose && build.onDispose(setupLaunchEditorService())
         build.initialOptions.conditions ??= ['development']
 
         build.onResolve({ filter: /^virtual:svelte-inspector-path:.*/ }, (args) => {
@@ -143,7 +144,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
             compiled.js.code += `\nimport ${JSON.stringify(cssId)};\n`
           }
 
-          // Svelte drops all `sourcesContent`, let'x fix them for esbuild to pick up.
+          // Svelte drops all `sourcesContent`, let's fix them for esbuild to pick up.
           const sourcesContent: (string | null)[] = []
           for (const src of compiled.js.map.sources) {
             if (src === basename(filename)) {
@@ -270,6 +271,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
   }
 
   function setupLaunchEditorService(): () => void {
+    onDispose = false
     waitLaunchEditorService = new Promise((resolve) => {
       import('launch-editor-middleware').then((mod) => {
         const handler: RequestListener = mod.default()

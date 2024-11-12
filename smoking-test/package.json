@@ -4,6 +4,7 @@
   "scripts": {
     "test": "esbuild-dev serve.ts",
     "test:ssr": "esbuild-dev ssr.ts",
-    "test:ssr-dev": "esbuild-dev --node:--conditions=development ssr.ts --dev"
+    "test:ssr-dev": "esbuild-dev --node:--conditions=development ssr.ts --dev",
+    "test:prod": "esbuild-dev build.ts"
   }
 }

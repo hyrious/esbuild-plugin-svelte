@@ -15,7 +15,4 @@
 <style>
   h1 { font-weight: bold; }
   h2 { color: red } /* line 17 */
-
-  /* svelte does not support nested styles yet, trigger an error here */
-  h1 { ::before { content: '' } } /* line 20 */
 </style>
