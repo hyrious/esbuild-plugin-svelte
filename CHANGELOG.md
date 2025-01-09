@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.3.3
 
 - Fixed async `dynamicCompileOptions` not being waited.
+- Fixed `.svelte.ts` not working.
 
 ## 0.3.2
 

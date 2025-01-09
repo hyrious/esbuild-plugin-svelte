@@ -1,3 +1,4 @@
+/** @type {import('@sveltejs/vite-plugin-svelte-inspector').Options} */
 export const defaultInspectorOptions = {
   toggleKeyCombo: 'alt-x',
   navKeys: { parent: 'ArrowUp', child: 'ArrowDown', next: 'ArrowRight', prev: 'ArrowLeft' },

@@ -1,4 +1,12 @@
-import { OnLoadArgs, PartialMessage, Plugin, PluginBuild } from 'esbuild'
+import {
+  BuildOptions,
+  Message,
+  OnLoadArgs,
+  PartialMessage,
+  Plugin,
+  PluginBuild,
+  TransformOptions,
+} from 'esbuild'
 import { readFile } from 'node:fs/promises'
 import { basename, relative } from 'node:path'
 import { createServer, RequestListener, Server } from 'node:http'
@@ -52,6 +60,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
         : { ...defaultInspectorOptions, ...options.inspector }
   let waitLaunchEditorService = Promise.resolve<Server | null>(null)
   let onDispose = true
+  let transformOptions: TransformOptions | undefined
 
   if (emitCss) compilerOptions.css ??= 'external'
 
@@ -64,7 +73,10 @@ export function svelte(options: SvelteOptions = {}): Plugin {
       compilerOptions.dev ??= isInDevMode(build)
       compilerOptions.generate ??= isInSsrMode(build) ? 'server' : 'client'
 
-      build.onEnd(() => cssCache.clear())
+      build.onEnd(() => {
+        cssCache.clear()
+        transformOptions = undefined
+      })
 
       if (compilerOptions.dev && compilerOptions.generate === 'client' && inspectorOptions) {
         injectInspector = true
@@ -169,9 +181,20 @@ export function svelte(options: SvelteOptions = {}): Plugin {
       build.onLoad({ filter: /\.svelte\.[jt]s(\?.*)?$/ }, async (args) => {
         const filename = relative(root, args.path).replaceAll('\\', '/')
 
-        const code = await readFile(args.path, 'utf8')
+        let code = await readFile(args.path, 'utf8')
 
         try {
+          // `compileModule` only accepts JavaScript even though svelte depends on `acorn-typescript`.
+          // https://github.com/sveltejs/svelte/blob/68cffa8/packages/svelte/src/compiler/index.js#L67
+          // So we need to transform TypeScript sources here. :/
+          let transformWarnings: PartialMessage[] = []
+          if (args.path.includes('.svelte.ts')) {
+            const transformOptions = getTransformOptions(build)
+            const result = await build.esbuild.transform(code, { ...transformOptions, sourcefile: filename })
+            transformWarnings = result.warnings
+            code = result.code
+          }
+
           const compileOptions = getModuleCompileOptions(compilerOptions)
 
           const compiled = compileModule(code, {
@@ -179,7 +202,10 @@ export function svelte(options: SvelteOptions = {}): Plugin {
             filename,
           })
 
-          return { contents: makeCode(compiled.js), warnings: convertMessages(compiled.warnings, code) }
+          return {
+            contents: makeCode(compiled.js),
+            warnings: transformWarnings.concat(convertMessages(compiled.warnings, code)),
+          }
         } catch (err) {
           return { errors: convertMessages([err], code) }
         }
@@ -228,6 +254,47 @@ export function svelte(options: SvelteOptions = {}): Plugin {
     return { dev, generate, filename, rootDir, warningFilter }
   }
 
+  function getTransformOptions(build: PluginBuild): TransformOptions {
+    if (transformOptions) return transformOptions
+    const {
+      bundle,
+      splitting,
+      preserveSymlinks,
+      outfile,
+      metafile,
+      outdir,
+      outbase,
+      external,
+      packages,
+      alias,
+      loader,
+      resolveExtensions,
+      mainFields,
+      conditions,
+      write,
+      allowOverwrite,
+      tsconfig,
+      outExtension,
+      publicPath,
+      entryNames,
+      chunkNames,
+      assetNames,
+      inject,
+      banner,
+      footer,
+      entryPoints,
+      stdin,
+      plugins,
+      absWorkingDir,
+      nodePaths,
+      ...transformOptions_
+    } = build.initialOptions
+    transformOptions = transformOptions_
+    transformOptions.loader = 'ts'
+    transformOptions.sourcemap = 'inline'
+    return transformOptions
+  }
+
   function isInSsrMode(build: PluginBuild): boolean {
     const { define = {} } = build.initialOptions
     return define['import.meta.env.SSR'] == 'true'
@@ -272,7 +339,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
 
   function setupLaunchEditorService(): () => void {
     onDispose = false
-    waitLaunchEditorService = new Promise((resolve) => {
+    waitLaunchEditorService = new Promise((resolve, reject) => {
       import('launch-editor-middleware').then((mod) => {
         const handler: RequestListener = mod.default()
         const server = createServer(cors(handler))
@@ -282,7 +349,7 @@ export function svelte(options: SvelteOptions = {}): Plugin {
           resolve(server)
         })
         server.on('error', (err) => console.error(err))
-      })
+      }, reject)
     })
     return () => waitLaunchEditorService.then((server) => server?.close())
   }

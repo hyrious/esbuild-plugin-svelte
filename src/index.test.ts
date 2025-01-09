@@ -49,8 +49,13 @@ for (const path in entries) {
   console.log(code)
   console.log(map)
   ;[code, map] = [_16to8(code), _16to8(map)]
-  console.log(
+
+  let url =
     'https://evanw.github.io/source-map-visualization/#' +
-      btoa(code.length + '\0' + code + map.length + '\0' + map).replace(/\=+$/, ''),
-  )
+    btoa(code.length + '\0' + code + map.length + '\0' + map).replace(/\=+$/, '')
+  if (process.env.CI) {
+    console.log(url)
+  } else {
+    console.log(`\x1b]8;;${url}\x1b\\source-map-visualization\x1b]8;;\x07`)
+  }
 }
